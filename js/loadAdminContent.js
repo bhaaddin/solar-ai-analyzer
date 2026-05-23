@@ -1,6 +1,6 @@
 // js/loadAdminContent.js - Load admin editable content to main page
 
-const API_URL = 'http://localhost:3001/api';
+const API_URL = (typeof CONFIG !== 'undefined' && CONFIG.API_URL) ? CONFIG.API_URL : '/api';
 
 async function loadAdminContent() {
     try {

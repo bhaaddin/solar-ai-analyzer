@@ -24,16 +24,14 @@ function getCurrentDisplayNames() {
 
 async function loadAIModel() {
     try {
-        // Try to load from your custom model location
-        // You need to upload your trained model files to your server
-        const modelURL = '/models/model.json';  // Place your model files here
-        const metadataURL = '/models/metadata.json';
-        
-        // Check if files exist first
-        const modelExists = await fetch(modelURL, { method: 'HEAD' }).catch(() => false);
-        
+        const modelURL = CONFIG.MODEL_URL || 'https://teachablemachine.withgoogle.com/models/tYgsqAQNE/';
+        const modelJson = modelURL + 'model.json';
+        const metadataJson = modelURL + 'metadata.json';
+
+        const modelExists = await fetch(modelJson, { method: 'HEAD' }).catch(() => false);
+
         if (modelExists && modelExists.ok) {
-            model = await tmImage.load(modelURL, metadataURL);
+            model = await tmImage.load(modelJson, metadataJson);
             isDemoMode = false;
             console.log('✅ AI Model loaded successfully');
             return true;
