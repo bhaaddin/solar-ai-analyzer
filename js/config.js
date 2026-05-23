@@ -1,6 +1,6 @@
 ﻿// js/config.js
 const CONFIG = {
-    API_URL: 'https://solar-h3em9f2s.b4a.run/api',
+    API_URL: '/api',
     MODEL_URL: 'https://teachablemachine.withgoogle.com/models/tYgsqAQNE/',
     CLASS_NAMES: ['vhodna_strecha', 'fve_instalovana', 'nevhodna_strecha', 'prumyslova_hala'],
     LOCATIONS: [
