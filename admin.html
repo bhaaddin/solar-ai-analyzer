@@ -1,0 +1,1023 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Intelligence Center - SolarAI</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="admin.css">
+    <style>
+        :root {
+            --primary: #1a365d;
+            --primary-light: #2c5282;
+            --primary-lighter: #4299e1;
+            --accent: #48bb78;
+            --accent-warning: #ecc94b;
+            --accent-danger: #fc8181;
+            --bg: #0f172a;
+            --bg-card: #1e293b;
+            --bg-card-hover: #2d3a4f;
+            --bg-sidebar: #1a2332;
+            --text: #e2e8f0;
+            --text-muted: #94a3b8;
+            --text-dim: #64748b;
+            --border: #2d3a4f;
+            --border-light: #3d4a5f;
+            --shadow: 0 4px 16px rgba(0,0,0,0.3);
+            --radius: 12px;
+            --radius-sm: 8px;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg); }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+        .admin-nav { background: var(--bg-card); border-bottom: 1px solid var(--border); padding: 0 24px; height: 64px; display: flex; align-items: center; position: sticky; top: 0; z-index: 100; }
+        .admin-nav-inner { max-width: 1600px; margin: 0 auto; width: 100%; display: flex; justify-content: space-between; align-items: center; }
+        .logo { font-size: 1.1rem; font-weight: 700; color: var(--text); text-decoration: none; display: flex; align-items: center; gap: 8px; }
+        .logo span { color: var(--accent); }
+        .nav-right { display: flex; align-items: center; gap: 16px; }
+        .nav-notif { position: relative; cursor: pointer; padding: 8px; border-radius: 8px; background: var(--bg); color: var(--text-muted); border: none; font-size: 1.1rem; }
+        .nav-notif:hover { background: var(--bg-card-hover); color: var(--text); }
+        .notif-badge { position: absolute; top: 0; right: 0; background: var(--accent-danger); color: white; font-size: 0.65rem; padding: 2px 6px; border-radius: 10px; font-weight: 700; }
+        .nav-user { color: var(--text-muted); font-size: 0.85rem; }
+        .logout-btn { padding: 6px 16px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); text-decoration: none; color: var(--text-muted); font-size: 0.85rem; cursor: pointer; }
+        .logout-btn:hover { background: var(--bg-card-hover); color: var(--text); }
+
+        .layout { max-width: 1600px; margin: 0 auto; padding: 24px; display: grid; grid-template-columns: 280px 1fr; gap: 24px; }
+
+        .sidebar { background: var(--bg-card); border-radius: var(--radius); border: 1px solid var(--border); padding: 20px; height: fit-content; position: sticky; top: 88px; }
+        .sidebar-title { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-dim); margin-bottom: 16px; font-weight: 600; }
+        .sidebar-menu { display: flex; flex-direction: column; gap: 4px; }
+        .sidebar-menu button { text-align: left; padding: 10px 14px; background: transparent; border: none; border-radius: var(--radius-sm); cursor: pointer; font-size: 0.85rem; color: var(--text-muted); display: flex; align-items: center; gap: 10px; transition: all 0.15s; }
+        .sidebar-menu button:hover { background: var(--bg-card-hover); color: var(--text); }
+        .sidebar-menu button.active { background: var(--primary-light); color: white; }
+        .sidebar-menu button .icon { width: 20px; text-align: center; font-size: 0.9rem; }
+        .sidebar-menu button .badge-count { margin-left: auto; background: var(--accent-danger); color: white; font-size: 0.65rem; padding: 1px 6px; border-radius: 10px; }
+
+        .main { background: var(--bg-card); border-radius: var(--radius); border: 1px solid var(--border); padding: 28px; min-height: 600px; }
+        .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
+        .section-header h2 { font-size: 1.3rem; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+        .section-header .subtitle { font-size: 0.8rem; color: var(--text-muted); }
+        .section-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+        .hide { display: none !important; }
+
+        .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+        .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+        .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+        @media (max-width: 1200px) { .grid-4 { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } .sidebar { position: static; } .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; } }
+
+        .stat-card { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 20px; }
+        .stat-card .stat-icon { font-size: 1.5rem; margin-bottom: 8px; }
+        .stat-card .stat-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+        .stat-card .stat-value { font-size: 1.8rem; font-weight: 700; color: white; margin: 4px 0; }
+        .stat-card .stat-change { font-size: 0.75rem; }
+        .stat-card .stat-change.up { color: var(--accent); }
+        .stat-card .stat-change.down { color: var(--accent-danger); }
+
+        .card { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 20px; margin-bottom: 16px; }
+        .card-title { font-size: 0.85rem; font-weight: 600; margin-bottom: 12px; color: var(--text); display: flex; align-items: center; gap: 8px; }
+        .card-title .badge { font-size: 0.65rem; padding: 2px 8px; border-radius: 10px; font-weight: 600; margin-left: auto; }
+
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; margin-bottom: 6px; font-weight: 500; font-size: 0.8rem; color: var(--text-muted); }
+        .form-control { width: 100%; padding: 10px 14px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 0.85rem; color: var(--text); outline: none; transition: border 0.15s; }
+        .form-control:focus { border-color: var(--primary-lighter); }
+        .form-control::placeholder { color: var(--text-dim); }
+        textarea.form-control { resize: vertical; min-height: 80px; font-family: inherit; }
+        select.form-control { cursor: pointer; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+        .btn { padding: 8px 18px; border: none; border-radius: var(--radius-sm); cursor: pointer; font-size: 0.8rem; font-weight: 500; display: inline-flex; align-items: center; gap: 6px; transition: all 0.15s; }
+        .btn-primary { background: var(--primary-light); color: white; }
+        .btn-primary:hover { background: var(--primary); }
+        .btn-accent { background: var(--accent); color: white; }
+        .btn-accent:hover { opacity: 0.9; }
+        .btn-danger { background: var(--accent-danger); color: white; }
+        .btn-danger:hover { opacity: 0.9; }
+        .btn-warning { background: var(--accent-warning); color: #1a202c; }
+        .btn-warning:hover { opacity: 0.9; }
+        .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-muted); }
+        .btn-outline:hover { border-color: var(--text-muted); color: var(--text); }
+        .btn-sm { padding: 5px 12px; font-size: 0.75rem; }
+
+        .alert { padding: 12px 16px; border-radius: var(--radius-sm); margin-bottom: 16px; font-size: 0.85rem; display: flex; align-items: center; gap: 8px; }
+        .alert-success { background: rgba(72, 187, 120, 0.15); color: var(--accent); border: 1px solid rgba(72, 187, 120, 0.3); }
+        .alert-error { background: rgba(252, 129, 129, 0.15); color: var(--accent-danger); border: 1px solid rgba(252, 129, 129, 0.3); }
+        .alert-info { background: rgba(66, 153, 225, 0.15); color: var(--primary-lighter); border: 1px solid rgba(66, 153, 225, 0.3); }
+
+        .table-wrap { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+        th { text-align: left; padding: 10px 12px; color: var(--text-muted); font-weight: 600; border-bottom: 1px solid var(--border); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; }
+        td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+        tr:hover td { background: var(--bg-card-hover); }
+
+        .badge { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 0.7rem; font-weight: 600; }
+        .badge-success { background: rgba(72, 187, 120, 0.2); color: var(--accent); }
+        .badge-warning { background: rgba(236, 201, 75, 0.2); color: var(--accent-warning); }
+        .badge-danger { background: rgba(252, 129, 129, 0.2); color: var(--accent-danger); }
+        .badge-info { background: rgba(66, 153, 225, 0.2); color: var(--primary-lighter); }
+        .badge-purple { background: rgba(159, 122, 234, 0.2); color: #9f7aea; }
+        .badge-gray { background: rgba(148, 163, 184, 0.2); color: var(--text-muted); }
+
+        .tabs { display: flex; gap: 4px; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 0; }
+        .tab { padding: 8px 16px; cursor: pointer; font-size: 0.8rem; color: var(--text-muted); border: none; background: none; border-bottom: 2px solid transparent; transition: all 0.15s; }
+        .tab:hover { color: var(--text); }
+        .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+        .activity-item { display: flex; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+        .activity-item:last-child { border-bottom: none; }
+        .activity-icon { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; flex-shrink: 0; }
+        .activity-icon.blue { background: rgba(66, 153, 225, 0.2); color: var(--primary-lighter); }
+        .activity-icon.green { background: rgba(72, 187, 120, 0.2); color: var(--accent); }
+        .activity-icon.yellow { background: rgba(236, 201, 75, 0.2); color: var(--accent-warning); }
+        .activity-icon.red { background: rgba(252, 129, 129, 0.2); color: var(--accent-danger); }
+        .activity-content { flex: 1; }
+        .activity-content .activity-text { font-size: 0.8rem; }
+        .activity-content .activity-time { font-size: 0.7rem; color: var(--text-dim); }
+
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); z-index: 1000; justify-content: center; align-items: center; }
+        .modal-overlay.show { display: flex; }
+        .modal { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); width: 600px; max-width: 95%; max-height: 85vh; overflow-y: auto; }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid var(--border); }
+        .modal-header h3 { font-size: 1rem; }
+        .modal-close { background: none; border: none; color: var(--text-muted); font-size: 1.2rem; cursor: pointer; }
+        .modal-body { padding: 20px; }
+
+        .progress-bar { height: 8px; background: var(--bg); border-radius: 4px; overflow: hidden; margin: 4px 0; }
+        .progress-bar .fill { height: 100%; border-radius: 4px; transition: width 0.3s; }
+        .fill-green { background: var(--accent); }
+        .fill-blue { background: var(--primary-lighter); }
+        .fill-yellow { background: var(--accent-warning); }
+        .fill-red { background: var(--accent-danger); }
+        .fill-purple { background: #9f7aea; }
+
+        .empty-state { text-align: center; padding: 60px 20px; color: var(--text-dim); }
+        .empty-state .empty-icon { font-size: 3rem; margin-bottom: 16px; }
+        .empty-state .empty-text { font-size: 0.9rem; }
+
+        .search-box { position: relative; }
+        .search-box input { padding-left: 36px; }
+        .search-box .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-dim); }
+
+        .inline-flex { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+        .gap-2 { gap: 8px; }
+        .mb-4 { margin-bottom: 16px; }
+        .mt-4 { margin-top: 16px; }
+        .w-full { width: 100%; }
+        .text-center { text-align: center; }
+        .text-muted { color: var(--text-muted); }
+        .text-sm { font-size: 0.8rem; }
+        .font-bold { font-weight: 700; }
+        .flex-between { display: flex; justify-content: space-between; align-items: center; }
+    </style>
+</head>
+<body>
+    <nav class="admin-nav">
+        <div class="admin-nav-inner">
+            <a href="index.html" class="logo">☀️ Solar<span>AI</span> <span style="font-size:0.7rem;color:var(--text-dim);font-weight:400;margin-left:8px;">Intelligence Center</span></a>
+            <div class="nav-right">
+                <button class="nav-notif" id="notifBtn" onclick="toggleNotifications()">
+                    <i class="fas fa-bell"></i>
+                    <span class="notif-badge" id="notifBadge" style="display:none;">0</span>
+                </button>
+                <span class="nav-user" id="userDisplay"></span>
+                <button id="logoutBtn" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="layout">
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-title">Navigation</div>
+            <div class="sidebar-menu" id="sidebarMenu">
+                <button class="active" data-section="dashboard"><span class="icon"><i class="fas fa-th-large"></i></span> Dashboard</button>
+                <button data-section="content"><span class="icon"><i class="fas fa-edit"></i></span> Website Content</button>
+                <button data-section="import"><span class="icon"><i class="fas fa-database"></i></span> Data Import Center</button>
+                <button data-section="users"><span class="icon"><i class="fas fa-users"></i></span> User Intelligence</button>
+                <button data-section="clients"><span class="icon"><i class="fas fa-briefcase"></i></span> Client Applications <span class="badge-count" id="pendingAppsBadge">0</span></button>
+                <button data-section="analytics"><span class="icon"><i class="fas fa-chart-bar"></i></span> Analytics</button>
+                <button data-section="ai-models"><span class="icon"><i class="fas fa-robot"></i></span> AI Models</button>
+            </div>
+        </aside>
+
+        <main class="main" id="mainContent">
+            <!-- ========== DASHBOARD ========== -->
+            <div id="section-dashboard" class="section-content">
+                <div class="section-header">
+                    <div><h2><i class="fas fa-th-large" style="color:var(--accent);"></i> Dashboard</h2><span class="subtitle">Přehled platformy</span></div>
+                    <div class="section-actions"><button class="btn btn-outline btn-sm" onclick="loadDashboard()"><i class="fas fa-sync"></i> Refresh</button></div>
+                </div>
+                <div class="grid-4" id="dashStats"></div>
+                <div class="grid-2" style="margin-top:20px;">
+                    <div class="card">
+                        <div class="card-title">📋 Recent Activity</div>
+                        <div id="dashActivity"><div class="empty-state"><div class="empty-icon">📭</div><div class="empty-text">No recent activity</div></div></div>
+                    </div>
+                    <div class="card">
+                        <div class="card-title">🔔 Notifications</div>
+                        <div id="dashNotifications"><div class="empty-state"><div class="empty-icon">🔔</div><div class="empty-text">No notifications</div></div></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========== WEBSITE CONTENT ========== -->
+            <div id="section-content" class="section-content hide">
+                <div class="section-header">
+                    <div><h2><i class="fas fa-edit" style="color:var(--accent);"></i> Website Content Management</h2><span class="subtitle">Ovládejte 80-100% webu přímo z admin panelu</span></div>
+                    <div class="section-actions">
+                        <button class="btn btn-accent btn-sm" onclick="saveFullContent()"><i class="fas fa-save"></i> Save All</button>
+                        <button class="btn btn-outline btn-sm" onclick="loadFullContent()"><i class="fas fa-sync"></i> Refresh</button>
+                    </div>
+                </div>
+                <div id="contentSaveResult" class="alert" style="display:none;"></div>
+                <div class="tabs" id="contentTabs">
+                    <button class="tab active" data-tab="homePage">🏠 Home</button>
+                    <button class="tab" data-tab="calculatorPage">⚡ Calculator</button>
+                    <button class="tab" data-tab="infoPage">ℹ️ Info</button>
+                    <button class="tab" data-tab="mapPage">🗺️ Map</button>
+                    <button class="tab" data-tab="aiSection">🤖 AI</button>
+                    <button class="tab" data-tab="usersPage">👥 Users</button>
+                </div>
+                <div id="contentTabContent"></div>
+            </div>
+
+            <!-- ========== DATA IMPORT CENTER ========== -->
+            <div id="section-import" class="section-content hide">
+                <div class="section-header">
+                    <div><h2><i class="fas fa-database" style="color:var(--accent);"></i> Data Import Center</h2><span class="subtitle">Importujte, validujte a spravujte dataset</span></div>
+                    <div class="section-actions"><button class="btn btn-outline btn-sm" onclick="loadImportStats()"><i class="fas fa-sync"></i> Refresh</button></div>
+                </div>
+                <div id="importResult" class="alert" style="display:none;"></div>
+                <div class="tabs">
+                    <button class="tab active" data-import-tab="csv">📊 CSV Import</button>
+                    <button class="tab" data-import-tab="json">📋 JSON Import</button>
+                    <button class="tab" data-import-tab="history">📦 Import History</button>
+                </div>
+                <div id="importTabContent"></div>
+            </div>
+
+            <!-- ========== USER INTELLIGENCE ========== -->
+            <div id="section-users" class="section-content hide">
+                <div class="section-header">
+                    <div><h2><i class="fas fa-users" style="color:var(--accent);"></i> User Intelligence Center</h2><span class="subtitle">Sledujte aktivitu a projekty uživatelů</span></div>
+                    <div class="section-actions">
+                        <button class="btn btn-outline btn-sm" onclick="loadUsers()"><i class="fas fa-sync"></i> Refresh</button>
+                        <button class="btn btn-outline btn-sm" onclick="loadActivityStats()"><i class="fas fa-chart-bar"></i> Activity Stats</button>
+                    </div>
+                </div>
+                <div id="usersContent"></div>
+            </div>
+
+            <!-- ========== CLIENT APPLICATIONS ========== -->
+            <div id="section-clients" class="section-content hide">
+                <div class="section-header">
+                    <div><h2><i class="fas fa-briefcase" style="color:var(--accent);"></i> Client Application Center</h2><span class="subtitle">Spravujte žádosti klientů</span></div>
+                    <div class="section-actions">
+                        <button class="btn btn-outline btn-sm" onclick="loadApplications()"><i class="fas fa-sync"></i> Refresh</button>
+                    </div>
+                </div>
+                <div class="tabs" id="appTabs">
+                    <button class="tab active" data-app-tab="all">All</button>
+                    <button class="tab" data-app-tab="pending">⏳ Pending</button>
+                    <button class="tab" data-app-tab="reviewed">👁️ Reviewed</button>
+                    <button class="tab" data-app-tab="contacted">📞 Contacted</button>
+                    <button class="tab" data-app-tab="completed">✅ Completed</button>
+                </div>
+                <div id="clientsContent"></div>
+            </div>
+
+            <!-- ========== ANALYTICS ========== -->
+            <div id="section-analytics" class="section-content hide">
+                <div class="section-header">
+                    <div><h2><i class="fas fa-chart-bar" style="color:var(--accent);"></i> Analytics Intelligence</h2><span class="subtitle">Vizuální přehledy a statistiky</span></div>
+                    <div class="section-actions"><button class="btn btn-outline btn-sm" onclick="loadAnalytics()"><i class="fas fa-sync"></i> Refresh</button></div>
+                </div>
+                <div id="analyticsContent"></div>
+            </div>
+
+            <!-- ========== AI MODELS ========== -->
+            <div id="section-ai-models" class="section-content hide">
+                <div class="section-header">
+                    <div><h2><i class="fas fa-robot" style="color:var(--accent);"></i> AI Model Management</h2><span class="subtitle">Spravujte AI modely platformy</span></div>
+                    <div class="section-actions">
+                        <button class="btn btn-accent btn-sm" onclick="showAddModel()"><i class="fas fa-plus"></i> Add Model</button>
+                        <button class="btn btn-outline btn-sm" onclick="loadAIModels()"><i class="fas fa-sync"></i> Refresh</button>
+                    </div>
+                </div>
+                <div id="aiModelsContent"></div>
+            </div>
+        </main>
+    </div>
+
+    <!-- NOTIFICATIONS MODAL -->
+    <div class="modal-overlay" id="notifModal">
+        <div class="modal">
+            <div class="modal-header"><h3>🔔 Notifications</h3><button class="modal-close" onclick="closeModal('notifModal')">✕</button></div>
+            <div class="modal-body" id="notifList"></div>
+        </div>
+    </div>
+
+    <!-- APPLICATION DETAIL MODAL -->
+    <div class="modal-overlay" id="appDetailModal">
+        <div class="modal" style="width:700px;">
+            <div class="modal-header"><h3>📄 Application Detail</h3><button class="modal-close" onclick="closeModal('appDetailModal')">✕</button></div>
+            <div class="modal-body" id="appDetailContent"></div>
+        </div>
+    </div>
+
+    <!-- USER DETAIL MODAL -->
+    <div class="modal-overlay" id="userDetailModal">
+        <div class="modal" style="width:700px;">
+            <div class="modal-header"><h3>👤 User Detail</h3><button class="modal-close" onclick="closeModal('userDetailModal')">✕</button></div>
+            <div class="modal-body" id="userDetailContent"></div>
+        </div>
+    </div>
+
+    <!-- ADD AI MODEL MODAL -->
+    <div class="modal-overlay" id="addModelModal">
+        <div class="modal" style="width:500px;">
+            <div class="modal-header"><h3>🤖 Add AI Model</h3><button class="modal-close" onclick="closeModal('addModelModal')">✕</button></div>
+            <div class="modal-body">
+                <div class="form-group"><label>Model Name</label><input type="text" id="newModelName" class="form-control" placeholder="e.g. Solar Predictor"></div>
+                <div class="form-group"><label>Version</label><input type="text" id="newModelVersion" class="form-control" placeholder="1.0.0"></div>
+                <div class="form-group"><label>Type</label>
+                    <select id="newModelType" class="form-control">
+                        <option value="image_classification">Image Classification</option>
+                        <option value="regression">Regression</option>
+                        <option value="nlp">NLP</option>
+                        <option value="custom">Custom</option>
+                    </select>
+                </div>
+                <div class="form-group"><label>Description</label><textarea id="newModelDesc" class="form-control" rows="3" placeholder="Model description..."></textarea></div>
+                <button class="btn btn-primary w-full" onclick="addModel()">Create Model</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/config.js"></script>
+    <script>
+    const API = CONFIG.API_URL;
+    let token = localStorage.getItem('token');
+    let currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+
+    if (!token) window.location.href = 'login.html';
+    if (currentUser.role !== 'admin') { alert('Admin access required'); window.location.href = 'index.html'; }
+    document.getElementById('userDisplay').innerHTML = `<i class="fas fa-user-circle"></i> ${currentUser.username}`;
+
+    // ========== UTILITY ==========
+    function showAlert(containerId, msg, type = 'success') {
+        const el = document.getElementById(containerId);
+        if (!el) return;
+        el.className = `alert alert-${type}`;
+        el.innerHTML = type === 'success' ? `<i class="fas fa-check-circle"></i> ${msg}` : type === 'error' ? `<i class="fas fa-exclamation-circle"></i> ${msg}` : `<i class="fas fa-info-circle"></i> ${msg}`;
+        el.style.display = 'flex';
+        if (type === 'success') setTimeout(() => el.style.display = 'none', 3000);
+    }
+
+    function api(path, opts = {}) {
+        const headers = { 'Content-Type': 'application/json', ...opts.headers };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+        return fetch(`${API}${path}`, { ...opts, headers }).then(r => r.json());
+    }
+
+    function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+
+    function openModal(id) { document.getElementById(id).classList.add('show'); }
+
+    function formatDate(d) { if (!d) return '-'; return new Date(d).toLocaleString(); }
+
+    function formatDateShort(d) { if (!d) return '-'; const dt = new Date(d); const now = new Date(); const diff = now - dt; if (diff < 60000) return 'just now'; if (diff < 3600000) return Math.floor(diff/60000)+'m ago'; if (diff < 86400000) return Math.floor(diff/3600000)+'h ago'; return dt.toLocaleDateString(); }
+
+    function statusBadge(s) { const m = { pending: 'badge-warning', reviewed: 'badge-info', contacted: 'badge-purple', completed: 'badge-success', active: 'badge-success', inactive: 'badge-gray', training: 'badge-warning', submitted: 'badge-info', saved: 'badge-gray' }; return `<span class="badge ${m[s]||'badge-gray'}">${s}</span>`; }
+
+    // ========== NAVIGATION ==========
+    document.querySelectorAll('.sidebar-menu button').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.sidebar-menu button').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            document.querySelectorAll('.section-content').forEach(s => s.classList.add('hide'));
+            const section = document.getElementById(`section-${btn.dataset.section}`);
+            if (section) section.classList.remove('hide');
+            if (btn.dataset.section === 'dashboard') loadDashboard();
+            if (btn.dataset.section === 'content') loadFullContent();
+            if (btn.dataset.section === 'import') loadImportStats();
+            if (btn.dataset.section === 'users') loadUsers();
+            if (btn.dataset.section === 'clients') loadApplications();
+            if (btn.dataset.section === 'analytics') loadAnalytics();
+            if (btn.dataset.section === 'ai-models') loadAIModels();
+        });
+    });
+
+    // Content tabs
+    document.addEventListener('click', (e) => {
+        const tab = e.target.closest('.tab');
+        if (!tab) return;
+
+        if (tab.dataset.tab) {
+            document.querySelectorAll('#contentTabs .tab').forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            renderContentTab(tab.dataset.tab);
+        }
+        if (tab.dataset.importTab) {
+            document.querySelectorAll('[data-import-tab]').forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            renderImportTab(tab.dataset.importTab);
+        }
+        if (tab.dataset.appTab) {
+            document.querySelectorAll('#appTabs .tab').forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            loadApplications(tab.dataset.appTab);
+        }
+    });
+
+    document.getElementById('logoutBtn').addEventListener('click', () => { localStorage.clear(); window.location.href = 'index.html'; });
+
+    // ========== DASHBOARD ==========
+    async function loadDashboard() {
+        try {
+            const data = await api('/admin/dashboard');
+            const s = data.stats || {};
+            document.getElementById('dashStats').innerHTML = `
+                <div class="stat-card"><div class="stat-icon">👥</div><div class="stat-label">Active Users</div><div class="stat-value">${s.activeUsers||0}</div></div>
+                <div class="stat-card"><div class="stat-icon">📁</div><div class="stat-label">Total Projects</div><div class="stat-value">${s.totalProjects||0}</div></div>
+                <div class="stat-card"><div class="stat-icon">🧮</div><div class="stat-label">Calculations</div><div class="stat-value">${s.totalCalculations||0}</div></div>
+                <div class="stat-card"><div class="stat-icon">📄</div><div class="stat-label">Uploaded Files</div><div class="stat-value">${s.totalUploadedFiles||0}</div></div>
+                <div class="stat-card"><div class="stat-icon">🤖</div><div class="stat-label">AI Activity</div><div class="stat-value">${s.aiActivity||0}</div></div>
+                <div class="stat-card"><div class="stat-icon">🌐</div><div class="stat-label">API Activity</div><div class="stat-value">${s.apiActivity||0}</div></div>
+                <div class="stat-card"><div class="stat-icon">📋</div><div class="stat-label">Pending Apps</div><div class="stat-value">${s.pendingApplications||0}</div></div>
+                <div class="stat-card"><div class="stat-icon">🧠</div><div class="stat-label">AI Models</div><div class="stat-value">${data.aiModels||0}</div></div>
+            `;
+
+            const act = data.recentActivity || [];
+            document.getElementById('dashActivity').innerHTML = act.length ? act.map(a => `
+                <div class="activity-item">
+                    <div class="activity-icon ${a.type==='project_created'?'green':a.type==='prediction'?'blue':a.type==='login'?'yellow':'blue'}"><i class="fas ${a.type==='project_created'?'fa-folder-open':a.type==='prediction'?'fa-calculator':a.type==='login'?'fa-sign-in-alt':'fa-circle'}"></i></div>
+                    <div class="activity-content"><div class="activity-text">${a.details||a.type} <span class="text-muted">by ${a.username}</span></div><div class="activity-time">${formatDateShort(a.timestamp)}</div></div>
+                </div>`).join('') : '<div class="empty-state"><div class="empty-icon">📭</div><div class="empty-text">No recent activity</div></div>';
+
+            const notif = data.unreadNotifications || 0;
+            const badge = document.getElementById('notifBadge');
+            if (notif > 0) { badge.textContent = notif; badge.style.display = 'inline'; } else { badge.style.display = 'none'; }
+
+            const apps = await api('/applications');
+            const pc = apps.counts?.pending || 0;
+            document.getElementById('pendingAppsBadge').textContent = pc;
+        } catch(e) { console.error('Dashboard error:', e); }
+    }
+
+    // ========== NOTIFICATIONS ==========
+    async function toggleNotifications() {
+        const data = await api('/admin/notifications');
+        const list = data || [];
+        document.getElementById('notifList').innerHTML = list.length ? list.map(n => `
+            <div class="activity-item" style="${n.read?'opacity:0.6;':''}">
+                <div class="activity-icon ${n.type==='new_application'?'green':n.type==='model_trained'?'blue':n.type==='model_deployed'?'purple':'yellow'}"><i class="fas ${n.type==='new_application'?'fa-user-plus':n.type==='model_trained'?'fa-brain':n.type==='model_deployed'?'fa-rocket':'fa-bell'}"></i></div>
+                <div class="activity-content">
+                    <div class="activity-text">${n.message}</div>
+                    <div class="activity-time">${formatDate(n.timestamp)}</div>
+                </div>
+                ${!n.read ? `<button class="btn btn-sm btn-outline" onclick="markNotifRead('${n.id}')">Read</button>` : ''}
+            </div>`).join('') : '<div class="empty-state"><div class="empty-icon">🔔</div><div class="empty-text">No notifications</div></div>';
+        openModal('notifModal');
+    }
+
+    async function markNotifRead(id) { await api(`/admin/notifications/${id}/read`, { method: 'POST' }); loadDashboard(); toggleNotifications(); }
+
+    // ========== WEBSITE CONTENT ==========
+    let fullContent = {};
+
+    async function loadFullContent() {
+        const data = await api('/content/full');
+        fullContent = data || {};
+        renderContentTab('homePage');
+    }
+
+    function renderContentTab(tab) {
+        const cont = document.getElementById('contentTabContent');
+        if (tab === 'homePage') {
+            const h = fullContent.homePage || {};
+            cont.innerHTML = `
+                <div class="card"><div class="card-title">🏠 Hero Section</div>
+                <div class="form-group"><label>Hero Title</label><input class="form-control" id="c-heroTitle" value="${escapeHtml(h.heroTitle||'')}"></div>
+                <div class="form-group"><label>Hero Description</label><textarea class="form-control" id="c-heroDesc" rows="3">${escapeHtml(h.heroDescription||'')}</textarea></div></div>
+                <div class="card"><div class="card-title">📌 Feature Cards</div>
+                <div id="c-features">${(h.cards||[]).map((c,i)=>`
+                    <div class="form-row mb-4"><div class="form-group"><label>Card ${i+1} Title</label><input class="form-control" data-feat="title" data-idx="${i}" value="${escapeHtml(c.title||'')}"></div>
+                    <div class="form-group"><label>Description</label><input class="form-control" data-feat="desc" data-idx="${i}" value="${escapeHtml(c.description||'')}"></div></div>`).join('')||'<div class="text-muted text-sm">No cards configured</div>'}</div>
+                <div class="card"><div class="card-title">❓ FAQ</div>
+                <div id="c-faq">${(h.faq||[]).map((f,i)=>`
+                    <div class="form-group"><label>Q${i+1}</label><input class="form-control" data-faq="q" data-idx="${i}" value="${escapeHtml(f.question||'')}"></div>
+                    <div class="form-group"><label>A${i+1}</label><textarea class="form-control" data-faq="a" data-idx="${i}" rows="2">${escapeHtml(f.answer||'')}</textarea></div>`).join('')||'<div class="text-muted text-sm">No FAQ items</div>'}</div>
+                <div class="card"><div class="card-title">🦶 Footer</div>
+                <div class="form-group"><label>Footer Text</label><input class="form-control" id="c-footer" value="${escapeHtml(h.footer||'')}"></div></div>`;
+        } else if (tab === 'calculatorPage') {
+            const c = fullContent.calculatorPage || {};
+            cont.innerHTML = `
+                <div class="card"><div class="card-title">⚡ Calculator Page</div>
+                <div class="form-group"><label>Page Title</label><input class="form-control" id="c-calc-title" value="${escapeHtml(c.title||'')}"></div>
+                <div class="form-group"><label>Tooltips</label><div class="text-muted text-sm mb-4">Edit tooltips for each field:</div>
+                ${Object.entries(c.tooltips||{}).map(([k,v])=>`<div class="form-group"><label>${k}</label><input class="form-control" data-calc-tip="${k}" value="${escapeHtml(v)}"></div>`).join('')}</div>
+                <div class="form-group"><label>Info Texts</label>${(c.infoTexts||[]).map((t,i)=>`<div class="form-group"><textarea class="form-control" data-calc-info="${i}" rows="2">${escapeHtml(t)}</textarea></div>`).join('')}</div></div>`;
+        } else if (tab === 'infoPage') {
+            const i = fullContent.infoPage || {};
+            cont.innerHTML = `
+                <div class="card"><div class="card-title">ℹ️ Info Page</div>
+                <div class="form-group"><label>Articles</label>${(i.articles||[]).map((a,idx)=>`
+                    <div class="card" style="background:var(--bg-card);"><div class="form-group"><label>Article Title</label><input class="form-control" data-article="title" data-idx="${idx}" value="${escapeHtml(a.title||'')}"></div>
+                    <div class="form-group"><label>Content</label><textarea class="form-control" data-article="content" data-idx="${idx}" rows="3">${escapeHtml(a.content||'')}</textarea></div>
+                    <label style="display:flex;align-items:center;gap:8px;font-size:0.8rem;color:var(--text-muted);"><input type="checkbox" ${a.published?'checked':''} data-article="published" data-idx="${idx}"> Published</label></div>`).join('')||'<div class="text-muted text-sm">No articles</div>'}</div>
+                <div class="card"><div class="card-title">📖 Definitions</div>
+                ${(i.definitions||[]).map((d,idx)=>`
+                    <div class="form-row"><div class="form-group"><label>Term</label><input class="form-control" data-def="term" data-idx="${idx}" value="${escapeHtml(d.term||'')}"></div>
+                    <div class="form-group"><label>Definition</label><input class="form-control" data-def="definition" data-idx="${idx}" value="${escapeHtml(d.definition||'')}"></div></div>`).join('')||'<div class="text-muted text-sm">No definitions</div>'}</div>`;
+        } else if (tab === 'mapPage') {
+            const m = fullContent.mapPage || {};
+            cont.innerHTML = `
+                <div class="card"><div class="card-title">🗺️ Map Page</div>
+                <div class="form-group"><label>Title</label><input class="form-control" id="c-map-title" value="${escapeHtml(m.title||'')}"></div>
+                <div class="form-group"><label>Description Text</label><textarea class="form-control" id="c-map-text" rows="2">${escapeHtml(m.text||'')}</textarea></div>
+                <div class="form-group"><label>Layers (comma separated)</label><input class="form-control" id="c-map-layers" value="${(m.layers||[]).join(', ')}"></div></div>`;
+        } else if (tab === 'aiSection') {
+            const ai = fullContent.aiSection || {};
+            cont.innerHTML = `
+                <div class="card"><div class="card-title">🤖 AI Prompts</div>
+                ${(ai.prompts||[]).map((p,idx)=>`<div class="form-group"><label>${p.key}</label><textarea class="form-control" data-ai-prompt="${idx}" rows="2">${escapeHtml(p.text||'')}</textarea></div>`).join('')||'<div class="text-muted text-sm">No prompts</div>'}</div>
+                <div class="card"><div class="card-title">🧠 AI Explanations</div>
+                ${(ai.aiExplanations||[]).map((e,idx)=>`<div class="form-group"><label>${e.key}</label><textarea class="form-control" data-ai-explain="${idx}" rows="2">${escapeHtml(e.content||'')}</textarea></div>`).join('')||'<div class="text-muted text-sm">No explanations'}</div>`;
+        } else if (tab === 'usersPage') {
+            const u = fullContent.usersPage || {};
+            const reg = u.registrationSettings || {};
+            cont.innerHTML = `
+                <div class="card"><div class="card-title">👥 Users Page Settings</div>
+                <div class="form-row"><div class="form-group"><label>Allow Registration</label><select class="form-control" id="c-allowReg"><option value="true" ${reg.allowRegistration?'selected':''}>Yes</option><option value="false" ${!reg.allowRegistration?'selected':''}>No</option></select></div>
+                <div class="form-group"><label>Require Approval</label><select class="form-control" id="c-reqApproval"><option value="true" ${reg.requireApproval?'selected':''}>Yes</option><option value="false" ${!reg.requireApproval?'selected':''}>No</option></select></div></div>
+                <div class="form-group"><label>Default Role</label><select class="form-control" id="c-defaultRole"><option value="user" ${reg.defaultRole==='user'?'selected':''}>User</option><option value="admin" ${reg.defaultRole==='admin'?'selected':''}>Admin</option></select></div>
+                <div class="form-group"><label>Roles</label><input class="form-control" id="c-roles" value="${(u.roles||[]).join(', ')}"></div>
+                <div class="form-group"><label>Session Timeout (hours)</label><input class="form-control" id="c-sessionTimeout" type="number" value="${u.accountSettings?.sessionTimeout||24}"></div></div>`;
+        }
+    }
+
+    // Save content from form data
+    async function saveFullContent() {
+        const updates = {};
+
+        const h = {};
+        const heroTitle = document.getElementById('c-heroTitle');
+        if (heroTitle) h.heroTitle = heroTitle.value;
+        const heroDesc = document.getElementById('c-heroDesc');
+        if (heroDesc) h.heroDescription = heroDesc.value;
+        const footer = document.getElementById('c-footer');
+        if (footer) h.footer = footer.value;
+
+        const cards = fullContent.homePage?.cards || [];
+        document.querySelectorAll('[data-feat]').forEach(el => {
+            const idx = parseInt(el.dataset.idx);
+            if (!cards[idx]) cards[idx] = {};
+            if (el.dataset.feat === 'title') cards[idx].title = el.value;
+            if (el.dataset.feat === 'desc') cards[idx].description = el.value;
+        });
+        if (cards.length) h.cards = cards;
+
+        const faq = fullContent.homePage?.faq || [];
+        document.querySelectorAll('[data-faq]').forEach(el => {
+            const idx = parseInt(el.dataset.idx);
+            if (!faq[idx]) faq[idx] = {};
+            if (el.dataset.faq === 'q') faq[idx].question = el.value;
+            if (el.dataset.faq === 'a') faq[idx].answer = el.value;
+        });
+        if (faq.length) h.faq = faq;
+
+        if (Object.keys(h).length) updates.homePage = h;
+
+        const calcTitle = document.getElementById('c-calc-title');
+        if (calcTitle) {
+            const c = {};
+            c.title = calcTitle.value;
+            const tooltips = {};
+            document.querySelectorAll('[data-calc-tip]').forEach(el => { tooltips[el.dataset.calcTip] = el.value; });
+            if (Object.keys(tooltips).length) c.tooltips = tooltips;
+            const infoTexts = [];
+            document.querySelectorAll('[data-calc-info]').forEach(el => { infoTexts[parseInt(el.dataset.calcInfo)] = el.value; });
+            if (infoTexts.length) c.infoTexts = infoTexts.filter(Boolean);
+            updates.calculatorPage = c;
+        }
+
+        const artTitle = document.querySelector('[data-article="title"][data-idx="0"]');
+        if (artTitle) {
+            const ip = {};
+            const articles = [];
+            document.querySelectorAll('[data-article]').forEach(el => {
+                const idx = parseInt(el.dataset.idx);
+                if (!articles[idx]) articles[idx] = {};
+                if (el.dataset.article === 'title') articles[idx].title = el.value;
+                if (el.dataset.article === 'content') articles[idx].content = el.value;
+                if (el.dataset.article === 'published') articles[idx].published = el.checked;
+            });
+            if (articles.length) ip.articles = articles;
+
+            const defs = [];
+            document.querySelectorAll('[data-def]').forEach(el => {
+                const idx = parseInt(el.dataset.idx);
+                if (!defs[idx]) defs[idx] = {};
+                if (el.dataset.def === 'term') defs[idx].term = el.value;
+                if (el.dataset.def === 'definition') defs[idx].definition = el.value;
+            });
+            if (defs.length) ip.definitions = defs;
+            updates.infoPage = ip;
+        }
+
+        const mapTitle = document.getElementById('c-map-title');
+        if (mapTitle) {
+            updates.mapPage = {
+                title: mapTitle.value,
+                text: (document.getElementById('c-map-text')||{}).value || '',
+                layers: (document.getElementById('c-map-layers')||{}).value?.split(',').map(s=>s.trim()).filter(Boolean) || []
+            };
+        }
+
+        const aiPrompts = document.querySelector('[data-ai-prompt="0"]');
+        if (aiPrompts) {
+            const ai = {};
+            const prompts = [];
+            document.querySelectorAll('[data-ai-prompt]').forEach(el => {
+                const idx = parseInt(el.dataset.idx);
+                const key = (fullContent.aiSection?.prompts||[])[idx]?.key || `prompt_${idx}`;
+                if (!prompts[idx]) prompts[idx] = { key };
+                prompts[idx].text = el.value;
+            });
+            if (prompts.length) ai.prompts = prompts;
+
+            const explains = [];
+            document.querySelectorAll('[data-ai-explain]').forEach(el => {
+                const idx = parseInt(el.dataset.idx);
+                const key = (fullContent.aiSection?.aiExplanations||[])[idx]?.key || `explain_${idx}`;
+                if (!explains[idx]) explains[idx] = { key };
+                explains[idx].content = el.value;
+            });
+            if (explains.length) ai.aiExplanations = explains;
+            updates.aiSection = ai;
+        }
+
+        const allowReg = document.getElementById('c-allowReg');
+        if (allowReg) {
+            updates.usersPage = {
+                registrationSettings: {
+                    allowRegistration: allowReg.value === 'true',
+                    requireApproval: (document.getElementById('c-reqApproval')||{}).value === 'true',
+                    defaultRole: (document.getElementById('c-defaultRole')||{}).value || 'user'
+                },
+                roles: (document.getElementById('c-roles')||{}).value?.split(',').map(s=>s.trim()).filter(Boolean) || ['user','admin'],
+                accountSettings: {
+                    sessionTimeout: parseInt((document.getElementById('c-sessionTimeout')||{}).value) || 24,
+                    allowProfileEdit: true,
+                    allowDeleteAccount: false
+                }
+            };
+        }
+
+        const result = await api('/content/full', { method: 'PUT', body: JSON.stringify(updates) });
+        if (result.success) { showAlert('contentSaveResult', 'All content saved successfully!', 'success'); fullContent = result.content; }
+        else showAlert('contentSaveResult', 'Error saving content', 'error');
+    }
+
+    function escapeHtml(s) { if (!s) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+    // ========== DATA IMPORT ==========
+    async function loadImportStats() { renderImportTab('csv'); }
+
+    function renderImportTab(tab) {
+        const cont = document.getElementById('importTabContent');
+        if (tab === 'csv') {
+            cont.innerHTML = `
+                <div class="card"><div class="card-title">📊 CSV Import <span class="badge badge-info">Built-in Datasets</span></div>
+                <div class="grid-4" id="csvStats"><div class="stat-card"><div class="stat-label">Historical Data</div><div class="stat-value" id="histCount">0</div></div>
+                <div class="stat-card"><div class="stat-label">Measures</div><div class="stat-value" id="measCount">0</div></div>
+                <div class="stat-card"><div class="stat-label">Scenarios</div><div class="stat-value" id="scenCount">0</div></div>
+                <div class="stat-card"><div class="stat-label">Model Data</div><div class="stat-value" id="modelCount">0</div></div></div>
+                <div class="inline-flex mt-4" style="flex-wrap:wrap;gap:8px;">
+                    <button class="btn btn-primary btn-sm" onclick="importCSV('historical','Historická data')">📊 Import Historical</button>
+                    <button class="btn btn-primary btn-sm" onclick="importCSV('measures','Katalog opatření')">📋 Import Measures</button>
+                    <button class="btn btn-primary btn-sm" onclick="importCSV('scenarios','Scénáře')">📈 Import Scenarios</button>
+                    <button class="btn btn-primary btn-sm" onclick="importCSV('modeldata','Model data')">🤖 Import Model Data</button>
+                </div>
+                <div class="inline-flex mt-4" style="flex-wrap:wrap;gap:8px;">
+                    <button class="btn btn-danger btn-sm" onclick="deleteAllData()">🗑️ Delete All Data</button>
+                </div>
+                <div class="mt-4" id="csvImportResult"></div>`;
+            updateCSVCounts();
+        } else if (tab === 'json') {
+            cont.innerHTML = `
+                <div class="card"><div class="card-title">📋 JSON Import</div>
+                <div class="form-group"><label>Data Type (collection name)</label><input class="form-control" id="jsonDataType" placeholder="e.g., customData"></div>
+                <div class="form-group"><label>JSON Data</label><textarea class="form-control" id="jsonDataInput" rows="8" placeholder='[{"key": "value", ...}]'></textarea></div>
+                <button class="btn btn-accent btn-sm" onclick="importJSON()"><i class="fas fa-upload"></i> Import JSON</button>
+                <div class="mt-4"><div class="form-group"><label>Validate CSV Data</label><textarea class="form-control" id="validateInput" rows="5" placeholder='Paste CSV as JSON array for validation...'></textarea></div>
+                <button class="btn btn-outline btn-sm" onclick="validateData()"><i class="fas fa-check"></i> Validate</button></div>
+                <div id="jsonImportResult" class="mt-4"></div>`;
+        } else if (tab === 'history') {
+            cont.innerHTML = `<div class="card"><div class="card-title">📦 Import History</div><div id="importHistoryList"><div class="empty-state"><div class="empty-icon">📦</div><div class="empty-text">Loading...</div></div></div></div>`;
+            api('/imports').then(data => {
+                const files = data || [];
+                document.getElementById('importHistoryList').innerHTML = files.length ? `
+                    <div class="table-wrap"><table><thead><tr><th>Type</th><th>File</th><th>Records</th><th>Date</th><th>Status</th></tr></thead>
+                    <tbody>${files.map(f => `<tr><td><span class="badge badge-info">${f.type}</span></td><td>${f.filename||f.originalName}</td><td>${f.recordCount||0}</td><td>${formatDate(f.uploadedAt)}</td><td>${statusBadge(f.status)}</td></tr>`).join('')}</tbody></table></div>`
+                    : '<div class="empty-state"><div class="empty-icon">📦</div><div class="empty-text">No imports yet</div></div>';
+            });
+        }
+    }
+
+    async function updateCSVCounts() {
+        try {
+            const h = await api('/historical-data'); document.getElementById('histCount').textContent = (h||[]).length;
+            const m = await api('/measures'); document.getElementById('measCount').textContent = (m||[]).length;
+            const s = await api('/scenarios'); document.getElementById('scenCount').textContent = (s||[]).length;
+            const md = await api('/model-data'); document.getElementById('modelCount').textContent = (md||[]).length;
+        } catch(e) {}
+    }
+
+    async function importCSV(type, name) {
+        const resultDiv = document.getElementById('csvImportResult');
+        resultDiv.innerHTML = `<div class="alert alert-info"><i class="fas fa-spinner fa-spin"></i> Importing ${name}...</div>`;
+        try {
+            const data = await api(`/import-${type}`, { method: 'POST' });
+            if (data.success) {
+                resultDiv.innerHTML = `<div class="alert alert-success"><i class="fas fa-check-circle"></i> ${name}: Imported ${data.count} records!</div>`;
+                updateCSVCounts();
+            } else resultDiv.innerHTML = `<div class="alert alert-error">Error: ${data.error}</div>`;
+        } catch(e) { resultDiv.innerHTML = `<div class="alert alert-error">Error: ${e.message}</div>`; }
+        setTimeout(() => resultDiv.innerHTML = '', 5000);
+    }
+
+    async function importJSON() {
+        const dataType = document.getElementById('jsonDataType').value || 'customImport';
+        const raw = document.getElementById('jsonDataInput').value;
+        const resultDiv = document.getElementById('jsonImportResult');
+        try {
+            const data = JSON.parse(raw);
+            if (!Array.isArray(data)) { resultDiv.innerHTML = '<div class="alert alert-error">Data must be a JSON array</div>'; return; }
+            const res = await api('/import/json', { method: 'POST', body: JSON.stringify({ data, dataType, filename: `${dataType}_${Date.now()}.json` }) });
+            if (res.success) resultDiv.innerHTML = `<div class="alert alert-success">Imported ${res.count} records!</div>`;
+            else resultDiv.innerHTML = `<div class="alert alert-error">${res.error}</div>`;
+        } catch(e) { resultDiv.innerHTML = `<div class="alert alert-error">Invalid JSON: ${e.message}</div>`; }
+    }
+
+    async function validateData() {
+        const raw = document.getElementById('validateInput').value;
+        const resultDiv = document.getElementById('jsonImportResult');
+        try {
+            const data = JSON.parse(raw);
+            const res = await api('/import/validate-csv', { method: 'POST', body: JSON.stringify({ data: Array.isArray(data) ? data : [data] }) });
+            resultDiv.innerHTML = `
+                <div class="alert alert-${res.valid?'success':'error'}">${res.valid ? '✅ Data is valid!' : '❌ Validation errors found'}</div>
+                <div class="card"><div class="card-title">Stats</div>
+                <div class="grid-3"><div class="stat-card"><div class="stat-label">Rows</div><div class="stat-value">${res.stats?.totalRows||0}</div></div>
+                <div class="stat-card"><div class="stat-label">Columns</div><div class="stat-value">${res.stats?.totalColumns||0}</div></div>
+                <div class="stat-card"><div class="stat-label">Empty Cells</div><div class="stat-value">${res.stats?.emptyCells||0}</div></div></div>
+                ${res.errors?.length ? `<div class="mt-4"><div class="card-title">Errors</div>${res.errors.map(e => `<div class="alert alert-error" style="margin:4px 0;padding:8px;">${e}</div>`).join('')}</div>` : ''}
+                ${res.warnings?.length ? `<div class="mt-4"><div class="card-title">Warnings</div>${res.warnings.slice(0,10).map(w => `<div class="text-sm text-muted">⚠️ ${w}</div>`).join('')}</div>` : ''}`;
+        } catch(e) { resultDiv.innerHTML = `<div class="alert alert-error">Invalid JSON: ${e.message}</div>`; }
+    }
+
+    async function deleteAllData() {
+        if (!confirm('⚠️ Delete ALL imported data?')) return;
+        const resultDiv = document.getElementById('csvImportResult');
+        await api('/admin/all', { method: 'DELETE' });
+        resultDiv.innerHTML = '<div class="alert alert-success">All data deleted</div>';
+        updateCSVCounts();
+        setTimeout(() => resultDiv.innerHTML = '', 3000);
+    }
+
+    // ========== USER INTELLIGENCE ==========
+    async function loadUsers() {
+        const data = await api('/admin/users');
+        const users = data.users || [];
+        document.getElementById('usersContent').innerHTML = `
+            <div class="card"><div class="card-title">👥 All Users <span class="badge badge-info">${users.length} total</span></div>
+            ${users.length ? `<div class="table-wrap"><table><thead><tr><th>User</th><th>Email</th><th>Role</th><th>Status</th><th>Created</th><th>Actions</th></tr></thead>
+            <tbody>${users.map(u => `<tr><td><strong>${u.username}</strong>${u.profile?.fullName ? `<br><span class="text-muted text-sm">${u.profile.fullName}</span>` : ''}</td>
+            <td class="text-muted">${u.email}</td><td>${statusBadge(u.role)}</td><td>${statusBadge(u.status||'active')}</td>
+            <td class="text-muted">${formatDateShort(u.createdAt)}</td>
+            <td><div class="inline-flex"><button class="btn btn-sm btn-outline" onclick="viewUser('${u.id}')"><i class="fas fa-eye"></i></button>
+            ${u.role !== 'admin' ? `<button class="btn btn-sm btn-danger" onclick="deleteUser('${u.id}')"><i class="fas fa-trash"></i></button>` : ''}</div></td></tr>`).join('')}</tbody></table></div>`
+            : '<div class="empty-state"><div class="empty-icon">👥</div><div class="empty-text">No users found</div></div>'}</div>`;
+    }
+
+    async function viewUser(userId) {
+        const data = await api(`/user-stats/${userId}`);
+        if (data.error) { alert(data.error); return; }
+        const u = data.user || {};
+        const s = data.stats || {};
+        document.getElementById('userDetailContent').innerHTML = `
+            <div class="card"><div class="card-title">${u.username} <span class="badge ${u.role === 'admin' ? 'badge-purple' : 'badge-info'}">${u.role}</span></div>
+            <div class="grid-2"><div class="stat-card"><div class="stat-label">Email</div><div class="stat-value" style="font-size:1rem;">${u.email}</div></div>
+            <div class="stat-card"><div class="stat-label">Full Name</div><div class="stat-value" style="font-size:1rem;">${u.profile?.fullName||'-'}</div></div>
+            <div class="stat-card"><div class="stat-label">Created</div><div class="stat-value" style="font-size:1rem;">${formatDate(u.createdAt)}</div></div>
+            <div class="stat-card"><div class="stat-label">Last Login</div><div class="stat-value" style="font-size:1rem;">${formatDate(u.lastLogin)}</div></div></div></div>
+            <div class="grid-3 mt-4">
+                <div class="stat-card"><div class="stat-label">Projects</div><div class="stat-value">${s.totalProjects||0}</div></div>
+                <div class="stat-card"><div class="stat-label">Applications</div><div class="stat-value">${s.totalApplications||0}</div></div>
+                <div class="stat-card"><div class="stat-label">Actions</div><div class="stat-value">${s.totalActions||0}</div></div>
+            </div>
+            <div class="card mt-4"><div class="card-title">📋 Recent Activity</div>
+            ${(data.recentActivity||[]).length ? (data.recentActivity||[]).slice(0,10).map(a => `
+                <div class="activity-item"><div class="activity-icon blue"><i class="fas fa-circle"></i></div>
+                <div class="activity-content"><div class="activity-text">${a.details||a.type}</div><div class="activity-time">${formatDate(a.timestamp)}</div></div></div>
+            `).join('') : '<div class="text-muted text-sm">No activity</div>'}</div>
+            <div class="card"><div class="card-title">📁 Projects</div>
+            ${(data.projects||[]).length ? (data.projects||[]).slice(0,5).map(p => `
+                <div class="activity-item"><div class="activity-icon green"><i class="fas fa-folder"></i></div>
+                <div class="activity-content"><div class="activity-text">${p.name} ${statusBadge(p.status)}</div><div class="activity-time">${formatDate(p.createdAt)}</div></div></div>
+            `).join('') : '<div class="text-muted text-sm">No projects</div>'}</div>`;
+        openModal('userDetailModal');
+    }
+
+    async function deleteUser(id) {
+        if (!confirm('Delete this user?')) return;
+        const res = await api(`/admin/users/${id}`, { method: 'DELETE' });
+        if (res.success) loadUsers();
+    }
+
+    async function loadActivityStats() {
+        const data = await api('/activity/stats');
+        document.getElementById('usersContent').innerHTML = `
+            <div class="card"><div class="card-title">📊 Activity Statistics</div>
+            <div class="grid-3"><div class="stat-card"><div class="stat-label">Total Actions</div><div class="stat-value">${data.totalActions||0}</div></div>
+            <div class="stat-card"><div class="stat-label">Unique Users</div><div class="stat-value">${(data.topUsers||[]).length}</div></div>
+            <div class="stat-card"><div class="stat-label">Active Days</div><div class="stat-value">${Object.keys(data.daily||{}).length}</div></div></div>
+            <div class="grid-2 mt-4">
+                <div class="card"><div class="card-title">📈 Activity by Type</div>
+                ${Object.entries(data.byType||{}).map(([k,v]) => `<div class="flex-between" style="padding:6px 0;border-bottom:1px solid var(--border);"><span class="text-sm">${k}</span><span class="font-bold">${v}</span></div>`).join('')||'<div class="text-muted text-sm">No data</div>'}</div>
+                <div class="card"><div class="card-title">🏆 Top Users</div>
+                ${(data.topUsers||[]).map((u,i) => `<div class="flex-between" style="padding:6px 0;border-bottom:1px solid var(--border);"><span class="text-sm">${i+1}. ${u.username}</span><span class="font-bold">${u.count}</span></div>`).join('')||'<div class="text-muted text-sm">No data</div>'}</div>
+            </div>
+            <button class="btn btn-outline btn-sm mt-4" onclick="loadUsers()"><i class="fas fa-arrow-left"></i> Back to Users</button>`;
+    }
+
+    // ========== CLIENT APPLICATIONS ==========
+    async function loadApplications(filter = 'all') {
+        const data = await api('/applications');
+        const apps = data.applications || [];
+        const counts = data.counts || {};
+
+        document.getElementById('pendingAppsBadge').textContent = counts.pending || 0;
+
+        const filtered = filter === 'all' ? apps : apps.filter(a => a.status === filter);
+        document.getElementById('clientsContent').innerHTML = `
+            <div class="grid-4 mb-4">
+                <div class="stat-card"><div class="stat-label">Total</div><div class="stat-value">${counts.total||0}</div></div>
+                <div class="stat-card"><div class="stat-label">Pending</div><div class="stat-value" style="color:var(--accent-warning);">${counts.pending||0}</div></div>
+                <div class="stat-card"><div class="stat-label">Reviewed</div><div class="stat-value" style="color:var(--primary-lighter);">${counts.reviewed||0}</div></div>
+                <div class="stat-card"><div class="stat-label">Contacted</div><div class="stat-value" style="color:#9f7aea;">${counts.contacted||0}</div></div>
+            </div>
+            <div class="card">${filtered.length ? `<div class="table-wrap"><table><thead><tr><th>Client</th><th>Project</th><th>Budget</th><th>Status</th><th>Submitted</th><th>Actions</th></tr></thead>
+            <tbody>${filtered.map(a => `<tr><td><strong>${a.username}</strong><br><span class="text-muted text-sm">${a.userEmail||''}</span></td>
+            <td>${a.projectName}</td><td>${a.budget ? new Intl.NumberFormat().format(a.budget)+' Kč' : '-'}</td><td>${statusBadge(a.status)}</td>
+            <td class="text-muted">${formatDateShort(a.submittedAt)}</td>
+            <td><div class="inline-flex"><button class="btn btn-sm btn-outline" onclick="viewApplication('${a.id}')"><i class="fas fa-eye"></i></button></div></td></tr>`).join('')}</tbody></table></div>`
+            : '<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-text">No applications found</div></div>'}</div>`;
+    }
+
+    async function viewApplication(appId) {
+        const data = await api(`/applications/${appId}`);
+        const a = data.application || {};
+        const p = data.project || {};
+        const u = data.user || {};
+        const results = a.results || p.results || {};
+
+        document.getElementById('appDetailContent').innerHTML = `
+            <div class="card"><div class="card-title">📄 ${a.projectName} ${statusBadge(a.status)}</div>
+            <div class="grid-2"><div><div class="form-group"><label>Client</label><div><strong>${a.username}</strong> ${u.profile?.fullName ? `(${u.profile.fullName})` : ''}</div></div>
+            <div class="form-group"><label>Email</label><div>${a.userEmail||u.email||'-'}</div></div>
+            <div class="form-group"><label>Location</label><div>${a.location||p.location||'-'}</div></div>
+            <div class="form-group"><label>Budget</label><div>${a.budget ? new Intl.NumberFormat().format(a.budget)+' Kč' : '-'}</div></div></div>
+            <div><div class="form-group"><label>Submitted</label><div>${formatDate(a.submittedAt)}</div></div>
+            ${a.reviewedAt ? `<div class="form-group"><label>Reviewed</label><div>${formatDate(a.reviewedAt)}</div></div>` : ''}
+            ${a.contactedAt ? `<div class="form-group"><label>Contacted</label><div>${formatDate(a.contactedAt)}</div></div>` : ''}
+            ${a.completedAt ? `<div class="form-group"><label>Completed</label><div>${formatDate(a.completedAt)}</div></div>` : ''}</div></div>
+            ${results.systemSize ? `<div class="card"><div class="card-title">📊 Results</div>
+            <div class="grid-3">${Object.entries(results).filter(([k]) => !['id','userId','createdAt','updatedAt','name','type','params','status','location','budget'].includes(k)).map(([k,v]) => `<div class="stat-card"><div class="stat-label">${k}</div><div class="stat-value" style="font-size:1rem;">${typeof v === 'number' ? v.toLocaleString() : v}</div></div>`).join('')}</div></div>` : ''}
+            <div class="card"><div class="card-title">✏️ Admin Notes & Status</div>
+            <div class="form-group"><label>Status</label>
+            <select class="form-control" id="appStatusSelect">
+                <option value="pending" ${a.status==='pending'?'selected':''}>⏳ Pending</option>
+                <option value="reviewed" ${a.status==='reviewed'?'selected':''}>👁️ Reviewed</option>
+                <option value="contacted" ${a.status==='contacted'?'selected':''}>📞 Contacted</option>
+                <option value="completed" ${a.status==='completed'?'selected':''}>✅ Completed</option>
+            </select></div>
+            <div class="form-group"><label>Admin Notes</label><textarea class="form-control" id="appAdminNotes" rows="4">${a.adminNotes||''}</textarea></div>
+            <button class="btn btn-primary" onclick="updateApplication('${a.id}')"><i class="fas fa-save"></i> Update</button></div>`;
+        openModal('appDetailModal');
+    }
+
+    async function updateApplication(id) {
+        const status = document.getElementById('appStatusSelect').value;
+        const notes = document.getElementById('appAdminNotes').value;
+        const res = await api(`/applications/${id}`, { method: 'PUT', body: JSON.stringify({ status, adminNotes: notes }) });
+        if (res.success) { closeModal('appDetailModal'); loadApplications(); showAlert('clientsContent', 'Application updated!', 'success'); }
+    }
+
+    // ========== ANALYTICS ==========
+    async function loadAnalytics() {
+        const data = await api('/admin/analytics');
+        const apps = await api('/applications');
+        const aiModels = await api('/ai-models/stats/summary');
+        const activityStats = await api('/activity/stats');
+
+        document.getElementById('analyticsContent').innerHTML = `
+            <div class="grid-4 mb-4">
+                <div class="stat-card"><div class="stat-label"><i class="fas fa-users"></i> Total Users</div><div class="stat-value">${data.totalUsers||0}</div></div>
+                <div class="stat-card"><div class="stat-label"><i class="fas fa-chart-line"></i> Total Projects</div><div class="stat-value">${data.totalProjects||0}</div></div>
+                <div class="stat-card"><div class="stat-label"><i class="fas fa-calculator"></i> Total Analyses</div><div class="stat-value">${data.totalAnalyses||0}</div></div>
+                <div class="stat-card"><div class="stat-label"><i class="fas fa-file-alt"></i> Applications</div><div class="stat-value">${data.totalApplications||0}</div></div>
+            </div>
+            <div class="grid-2">
+                <div class="card"><div class="card-title">📊 AI Statistics</div>
+                <div class="grid-2">${['total','active','training','avgAccuracy'].map(k => `<div class="stat-card"><div class="stat-label">${k}</div><div class="stat-value" style="font-size:1.2rem;">${k === 'avgAccuracy' ? (aiModels[k]||0)+'%' : aiModels[k]||0}</div></div>`).join('')}</div></div>
+                <div class="card"><div class="card-title">📋 Client Activity</div>
+                <div class="grid-2">${Object.entries(apps.counts||{}).filter(([k]) => k !== 'total').map(([k,v]) => `<div class="stat-card"><div class="stat-label">${k}</div><div class="stat-value" style="font-size:1.2rem;">${v}</div></div>`).join('')}</div></div>
+            </div>
+            <div class="grid-2 mt-4">
+                <div class="card"><div class="card-title">📈 Activity by Type</div>
+                <div>${Object.entries(activityStats.byType||{}).map(([k,v]) => {
+                    const max = Math.max(...Object.values(activityStats.byType||{}), 1);
+                    const pct = (v / max * 100);
+                    return `<div style="margin-bottom:12px;"><div class="flex-between"><span class="text-sm">${k}</span><span class="font-bold">${v}</span></div><div class="progress-bar"><div class="fill fill-blue" style="width:${pct}%"></div></div></div>`;
+                }).join('')||'<div class="text-muted text-sm">No activity data</div>'}</div>
+                <div class="card"><div class="card-title">🏆 Top Users by Activity</div>
+                <div>${(activityStats.topUsers||[]).map((u,i) => {
+                    const max = Math.max(...(activityStats.topUsers||[]).map(x=>x.count), 1);
+                    const pct = (u.count / max * 100);
+                    return `<div style="margin-bottom:12px;"><div class="flex-between"><span class="text-sm">${i+1}. ${u.username}</span><span class="font-bold">${u.count}</span></div><div class="progress-bar"><div class="fill fill-green" style="width:${pct}%"></div></div></div>`;
+                }).join('')||'<div class="text-muted text-sm">No user activity</div>'}</div>
+            </div>
+            <div class="card mt-4"><div class="card-title">📅 Daily Activity (Last 14 Days)</div>
+            <div class="grid-4">${Object.entries(activityStats.daily||{}).sort((a,b)=>a[0].localeCompare(b[0])).slice(-14).map(([day,count]) => {
+                const max = Math.max(...Object.values(activityStats.daily||{}), 1);
+                const pct = (count / max * 100);
+                return `<div class="stat-card" style="text-align:center;"><div class="stat-label">${day.slice(5)}</div><div style="margin:8px 0;"><div style="background:var(--bg);border-radius:4px;height:60px;display:flex;align-items:flex-end;"><div class="fill fill-blue" style="width:100%;height:${pct}%;border-radius:4px;"></div></div></div><div class="font-bold">${count}</div></div>`;
+            }).join('')}</div></div>`;
+    }
+
+    // ========== AI MODELS ==========
+    async function loadAIModels() {
+        const data = await api('/ai-models');
+        const stats = await api('/ai-models/stats/summary');
+        const models = data || [];
+        document.getElementById('aiModelsContent').innerHTML = `
+            <div class="grid-4 mb-4">
+                <div class="stat-card"><div class="stat-label">Total Models</div><div class="stat-value">${stats.total||0}</div></div>
+                <div class="stat-card"><div class="stat-label">Active</div><div class="stat-value" style="color:var(--accent);">${stats.active||0}</div></div>
+                <div class="stat-card"><div class="stat-label">Avg Accuracy</div><div class="stat-value">${stats.avgAccuracy||0}%</div></div>
+                <div class="stat-card"><div class="stat-label">Types</div><div class="stat-value" style="font-size:1rem;">${Object.keys(stats.byType||{}).length}</div></div>
+            </div>
+            ${models.length ? models.map(m => `
+                <div class="card"><div class="flex-between"><div class="card-title" style="margin:0;">🤖 ${m.name} <span class="badge badge-info">v${m.version}</span> ${statusBadge(m.status)}</div>
+                <div class="inline-flex"><button class="btn btn-sm btn-outline" onclick="trainModel('${m.id}')"><i class="fas fa-play"></i> Train</button>
+                <button class="btn btn-sm btn-accent" onclick="deployModel('${m.id}')"><i class="fas fa-rocket"></i> Deploy</button>
+                <button class="btn btn-sm btn-danger" onclick="deleteModel('${m.id}')"><i class="fas fa-trash"></i></button></div></div>
+                <div class="grid-3 mt-4">
+                    <div class="stat-card"><div class="stat-label">Type</div><div class="stat-value" style="font-size:1rem;">${m.type}</div></div>
+                    <div class="stat-card"><div class="stat-label">Accuracy</div><div class="stat-value" style="font-size:1rem;">${m.accuracy||0}%</div>
+                        <div class="progress-bar"><div class="fill ${(m.accuracy||0) > 85 ? 'fill-green' : (m.accuracy||0) > 70 ? 'fill-yellow' : 'fill-red'}" style="width:${m.accuracy||0}%"></div></div></div>
+                    <div class="stat-card"><div class="stat-label">Last Trained</div><div class="stat-value" style="font-size:1rem;word-break:break-all;">${formatDate(m.lastTrained)||'Never'}</div></div>
+                </div>
+                <div class="text-muted text-sm mt-4">${m.description||''} ${m.trainingData ? `| Data: ${m.trainingData}` : ''}</div></div>
+            `).join('') : '<div class="empty-state"><div class="empty-icon">🤖</div><div class="empty-text">No AI models configured</div></div>'}`;
+    }
+
+    function showAddModel() { openModal('addModelModal'); }
+
+    async function addModel() {
+        const name = document.getElementById('newModelName').value;
+        const version = document.getElementById('newModelVersion').value || '1.0.0';
+        const type = document.getElementById('newModelType').value;
+        const desc = document.getElementById('newModelDesc').value;
+        if (!name) { alert('Please enter a model name'); return; }
+        const res = await api('/ai-models', { method: 'POST', body: JSON.stringify({ name, version, type, description: desc }) });
+        if (res.success) { closeModal('addModelModal'); loadAIModels(); }
+    }
+
+    async function trainModel(id) {
+        const res = await api(`/ai-models/${id}/train`, { method: 'POST' });
+        if (res.success) loadAIModels();
+    }
+
+    async function deployModel(id) {
+        const res = await api(`/ai-models/${id}/deploy`, { method: 'POST' });
+        if (res.success) loadAIModels();
+    }
+
+    async function deleteModel(id) {
+        if (!confirm('Delete this AI model?')) return;
+        const res = await api(`/ai-models/${id}`, { method: 'DELETE' });
+        if (res.success) loadAIModels();
+    }
+
+    // ========== INIT ==========
+    loadDashboard();
+    </script>
+</body>
+</html>

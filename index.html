@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Solar Roof Analyzer | Ústecký kraj 2026</title>
+    <link rel="stylesheet" href="style.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@2.8.6/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8/dist/teachablemachine-image.min.js"></script>
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+    [contenteditable="true"] {
+        outline: 2px dashed #2c5282 !important;
+        padding: 4px !important;
+        background-color: #fff8e1 !important;
+        cursor: text !important;
+        transition: all 0.2s ease;
+    }
+
+    [contenteditable="true"]:hover {
+        background-color: #ffecb3 !important;
+    }
+
+    [contenteditable="true"]:focus {
+        outline: 2px solid #2c5282 !important;
+        background-color: #fff3e0 !important;
+    }
+
+    #adminEditBtn {
+        transition: all 0.2s ease;
+    }
+
+    #adminEditBtn.editing-active {
+        background: #2e7d32 !important;
+        color: white !important;
+    }
+
+    @keyframes fadeOut {
+        0% { opacity: 1; transform: translateX(0); }
+        70% { opacity: 1; transform: translateX(0); }
+        100% { opacity: 0; transform: translateX(20px); visibility: hidden; }
+    }
+</style>
+
+</head>
+<body>
+    <nav class="navbar" id="mainNav">
+        <div class="nav-inner">
+            <a href="index.html" class="nav-brand" id="siteTitle">🌞 SolarAI</a>
+            <div class="nav-section-links" id="navSectionLinks">
+                <button onclick="scrollToSection('calculator')" class="nav-section-link">⚡ Kalkulačka</button>
+                <button onclick="scrollToSection('map-section')" class="nav-section-link">📍 Lokace</button>
+                <button onclick="scrollToSection('roof-upload')" class="nav-section-link">📷 Střecha</button>
+            </div>
+            <div class="nav-links">
+                <button id="langToggle" class="btn btn-outline btn-sm">🌐 CZ</button>
+                <button id="adminEditBtn" class="btn btn-outline btn-sm" style="display: none;">✏️ Edit Mode</button>
+                <a href="login.html" id="loginNavBtn" class="btn btn-outline btn-sm">🔐 Přihlásit</a>
+                <a href="register.html" id="registerNavBtn" class="btn btn-primary btn-sm">Registrovat</a>
+                <span id="userNavDisplay" style="display: none;"></span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- HERO SECTION -->
+    <section id="hero" class="hero-section">
+        <div class="hero-bg">
+            <div style="width:100%;height:100%;background:linear-gradient(135deg,#1a365d 0%,#2b6cb0 50%,#4299e1 100%);"></div>
+            <div class="hero-overlay"></div>
+        </div>
+        <div class="hero-particles" id="heroParticles"></div>
+        <div class="hero-content">
+            <div class="hero-badge">⚡ AI simulátor energetické budoucnosti</div>
+            <h1 class="hero-title">AI Solar <span>Intelligence</span><br>System</h1>
+            <p class="hero-subtitle">Plánujte fotovoltaické elektrárny, bateriová úložiště a analýzu střech s pomocí umělé inteligence.</p>
+            <div class="user-mode-selector" id="userModeSelector"></div>
+            <div class="hero-cta">
+                <button class="btn btn-hero" onclick="scrollToSection('calculator')">⚡ Začít kalkulaci</button>
+                <button class="btn btn-hero-outline" onclick="scrollToSection('map-section')">🧠 Scénáře</button>
+            </div>
+            <div class="feature-cards">
+                <button class="feature-card" onclick="scrollToSection('calculator')">
+                    <span class="icon-wrap" style="color:#90cdf4;">⚡</span>
+                    AI Kalkulačka
+                </button>
+                <button class="feature-card" onclick="scrollToSection('map-section')">
+                    <span class="icon-wrap" style="color:#f87171;">📍</span>
+                    Lokální AI
+                </button>
+                <button class="feature-card" onclick="scrollToSection('roof-upload')">
+                    <span class="icon-wrap" style="color:#a78bfa;">📷</span>
+                    Analýza střechy
+                </button>
+                <button class="feature-card" onclick="openChat()">
+                    <span class="icon-wrap" style="color:#60a5fa;">🧠</span>
+                    AI Poradce
+                </button>
+                <button class="feature-card" onclick="scrollToSection('legendSection')">
+                    <span class="icon-wrap" style="color:#34d399;">📖</span>
+                    Typy střech
+                </button>
+            </div>
+        </div>
+        <button class="scroll-indicator" onclick="scrollToSection('calculator')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M7 13l5 5 5-5M7 6l5 5 5-5"/>
+            </svg>
+        </button>
+    </section>
+
+    <div class="main-layout">
+        <!-- LEFT SIDEBAR - SMART CALCULATOR -->
+        <aside class="smart-sidebar" id="smartSidebar"></aside>
+
+        <!-- MAIN CONTENT -->
+        <main class="feed">
+            <div class="create-post-card section-panel" id="roof-upload">
+                <div class="upload-area" id="uploadArea">
+                    <span id="uploadText">📸 Klikněte nebo přetáhněte satelitní snímek střechy</span>
+                    <br><span style="font-size: 12px;" id="uploadSupport">Podporuje JPG, PNG, JPEG (max 5MB)</span>
+                    <input type="file" id="imageUpload" accept="image/*" hidden>
+                </div>
+                <div class="preview-container" id="previewContainer" style="display: none;">
+                    <img id="previewImage">
+                    <div style="margin-top: 16px; display: flex; gap: 10px; justify-content: center;">
+                        <button id="analyzeBtn" class="btn btn-primary">🔍 Analyzovat střechu</button>
+                        <button id="resetBtn" class="btn btn-outline">📁 Nový obrázek</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="results" style="display: none;">
+                <div class="post-card">
+                    <div class="result-header" id="roofType"></div>
+                    <div id="confidenceBars"></div>
+                    <div id="savingsSection"></div>
+                    <div id="recommendation"></div>
+                </div>
+            </div>
+
+            <div class="post-card section-panel" id="map-section">
+                <h3 id="mapTitle">🗺️ Solární mapa - Ústecký kraj</h3>
+                <div class="quick-locations" id="quickLocations">
+                    <button class="loc-btn" onclick="quickSelectLocation('Most')">📍 Most</button>
+                    <button class="loc-btn" onclick="quickSelectLocation('Ústí nad Labem')">📍 Ústí n.L.</button>
+                    <button class="loc-btn" onclick="quickSelectLocation('Teplice')">📍 Teplice</button>
+                    <button class="loc-btn" onclick="quickSelectLocation('Chomutov')">📍 Chomutov</button>
+                    <button class="loc-btn" onclick="quickSelectLocation('Litoměřice')">📍 Litoměřice</button>
+                    <button class="loc-btn" onclick="quickSelectLocation('Děčín')">📍 Děčín</button>
+                </div>
+                <div class="map-search-container">
+                    <div class="map-search-box">
+                        <span class="map-search-icon">🔍</span>
+                        <input type="text" id="mapSearchInput" class="map-search-input" placeholder="Hledat město, obec, adresu..." autocomplete="off">
+                        <div id="mapSearchResults" class="map-search-results"></div>
+                    </div>
+                </div>
+                <div id="map" style="height: 350px; border-radius: 12px; margin-top: 12px;"></div>
+                <div id="locationInfo" style="margin-top: 8px; font-size: 0.8rem; color: var(--text-muted); text-align: center;"></div>
+            </div>
+
+            <div id="analysis-section"></div>
+            <div id="cityAnalysisContainer" class="city-analysis-container" style="display: none;">
+                <div class="city-section city-hero-section" id="citySection1">
+                    <div class="city-hero-banner">
+                        <div class="city-hero-bg"></div>
+                        <div class="city-hero-content">
+                            <div class="city-hero-badge">📍 AI Energy Analysis</div>
+                            <h2 class="city-hero-title">Solar Potential for <span id="cityNameDisplay"></span></h2>
+                            <p class="city-hero-subtitle" id="citySubtitle">Comprehensive energy intelligence report</p>
+                        </div>
+                    </div>
+                    <div class="city-stats-grid" id="cityStatsGrid"></div>
+                </div>
+
+                <div class="city-section" id="citySection2">
+                    <div class="city-section-header">
+                        <h3>📊 Energy Analysis & Predictions</h3>
+                        <p>Interactive charts showing energy trends, CO₂ reductions, and battery performance</p>
+                    </div>
+                    <div class="charts-grid">
+                        <div class="chart-card glass">
+                            <div class="chart-header">⚡ Energy Production Trends</div>
+                            <div class="chart-wrapper"><canvas id="energyTrendChart"></canvas></div>
+                        </div>
+                        <div class="chart-card glass">
+                            <div class="chart-header">🌍 CO₂ Savings</div>
+                            <div class="chart-wrapper"><canvas id="co2TrendChart"></canvas></div>
+                        </div>
+                        <div class="chart-card glass">
+                            <div class="chart-header">🔋 Battery Performance</div>
+                            <div class="chart-wrapper"><canvas id="batteryTrendChart"></canvas></div>
+                        </div>
+                        <div class="chart-card glass">
+                            <div class="chart-header">📈 Self-Sufficiency Prediction</div>
+                            <div class="chart-wrapper"><canvas id="selfSufficiencyChart"></canvas></div>
+                        </div>
+                        <div class="chart-card glass chart-full">
+                            <div class="chart-header">🏭 Scenario Comparison 2026-2035</div>
+                            <div class="chart-wrapper"><canvas id="scenarioCompareChart"></canvas></div>
+                        </div>
+                        <div class="chart-card glass chart-full">
+                            <div class="chart-header">💶 Predicted Savings & ROI Timeline</div>
+                            <div class="chart-wrapper"><canvas id="savingsTimelineChart"></canvas></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="city-section" id="citySection3">
+                    <div class="city-section-header">
+                        <h3>🎯 AI Recommendations</h3>
+                        <p>Optimized suggestions based on location data and predictive models</p>
+                    </div>
+                    <div class="recommendations-grid" id="recommendationsGrid"></div>
+                    <div class="risk-card glass" id="riskCard">
+                        <div class="risk-header">⚠️ Risk Assessment</div>
+                        <div class="risk-content" id="riskContent"></div>
+                    </div>
+                </div>
+
+                <div class="city-section" id="citySection4">
+                    <div class="city-section-header">
+                        <h3>📜 Historical Data Analysis (2015-2025)</h3>
+                        <p>Ten-year trends and scenario projections for informed decision making</p>
+                    </div>
+                    <div class="historical-grid">
+                        <div class="chart-card glass">
+                            <div class="chart-header">📊 Historical Energy Trends</div>
+                            <div class="chart-wrapper"><canvas id="historicalEnergyChart"></canvas></div>
+                        </div>
+                        <div class="chart-card glass">
+                            <div class="chart-header">🔮 Future Scenario Projections</div>
+                            <div class="chart-wrapper"><canvas id="historicalScenarioChart"></canvas></div>
+                        </div>
+                        <div class="chart-card glass chart-full">
+                            <div class="chart-header">📈 Year-over-Year Comparison</div>
+                            <div class="chart-wrapper"><canvas id="yearOverYearChart"></canvas></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="city-section" id="citySection5">
+                    <div class="city-section-header">
+                        <h3>🤖 AI Analysis Explanation</h3>
+                        <p>Understanding the intelligence behind the recommendations</p>
+                    </div>
+                    <div class="ai-explanation-grid" id="aiExplanationGrid"></div>
+                </div>
+
+                <div class="city-section" id="citySection6">
+                    <div class="city-section-header">
+                        <h3>🌞 Location Insights & Opportunities</h3>
+                        <p>Solar potential, community information, and energy opportunities</p>
+                    </div>
+                    <div class="insights-grid" id="insightsGrid"></div>
+                </div>
+            </div>
+
+            <div id="calcResultsContainer" class="calc-results-container" style="display: none;">
+                <div class="city-section calc-hero-section" id="calcSection1">
+                    <div class="city-hero-banner calc-banner">
+                        <div class="city-hero-bg calc-bg"></div>
+                        <div class="city-hero-content">
+                            <div class="city-hero-badge">⚡ AI Calculation Results</div>
+                            <h2 class="city-hero-title">Your Solar Energy <span id="calcLocationName">Project</span></h2>
+                            <p class="city-hero-subtitle" id="calcLocationDetail">Complete financial and energy analysis</p>
+                        </div>
+                    </div>
+                    <div class="city-stats-grid" id="calcKeyMetrics"></div>
+                </div>
+
+                <div class="city-section" id="calcSection2">
+                    <div class="city-section-header">
+                        <h3>🎯 Recommendations</h3>
+                        <p>Optimized system configuration based on your inputs</p>
+                    </div>
+                    <div class="recommendations-grid" id="calcRecommendations"></div>
+                </div>
+
+                <div class="city-section" id="calcSection3">
+                    <div class="city-section-header">
+                        <h3>📊 Charts & Analysis</h3>
+                        <p>Energy breakdown, savings projections, and cost distribution</p>
+                    </div>
+                    <div class="charts-grid">
+                        <div class="chart-card glass">
+                            <div class="chart-header">⚡ Energy Breakdown</div>
+                            <div class="chart-wrapper"><canvas id="calcEnergyBreakdown"></canvas></div>
+                        </div>
+                        <div class="chart-card glass">
+                            <div class="chart-header">🔋 Battery Efficiency</div>
+                            <div class="chart-wrapper"><canvas id="calcBatteryEfficiency"></canvas></div>
+                        </div>
+                        <div class="chart-card glass chart-full">
+                            <div class="chart-header">💶 Savings Projection (25 years)</div>
+                            <div class="chart-wrapper"><canvas id="calcSavingsProjection"></canvas></div>
+                        </div>
+                        <div class="chart-card glass chart-full">
+                            <div class="chart-header">📊 Cost Distribution</div>
+                            <div class="chart-wrapper"><canvas id="calcCostDistribution"></canvas></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="city-section" id="calcSection4">
+                    <div class="city-section-header">
+                        <h3>📈 Timeline & Financials</h3>
+                        <p>Project milestones and detailed financial overview</p>
+                    </div>
+                    <div class="timeline-container" id="calcTimeline"></div>
+                    <div class="financial-overview" id="calcFinancials"></div>
+                </div>
+
+                <div class="city-section" id="calcSection5">
+                    <div class="city-section-header">
+                        <h3>🤖 AI Explanation</h3>
+                        <p>Why this system was selected for your needs</p>
+                    </div>
+                    <div class="ai-explanation-grid" id="calcAiExplanations"></div>
+                </div>
+
+                <div class="city-section" id="calcSection6">
+                    <div class="city-section-header">
+                        <h3>💾 Save & Export</h3>
+                        <p>Save your project or submit an application</p>
+                    </div>
+                    <div class="export-grid glass" id="exportGrid">
+                        <button class="export-btn" id="saveProjectBtn">💾 Save Project</button>
+                        <button class="export-btn" id="exportPdfBtn">📄 Export PDF</button>
+                        <button class="export-btn" id="sendApplicationBtn">📨 Send Application</button>
+                        <button class="export-btn" id="downloadReportBtn">📥 Download Report</button>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- RIGHT SIDEBAR - INFO / STATS -->
+        <aside class="sidebar sidebar-right" id="rightSidebar">
+            <div class="sidebar-section">
+                <div class="info-btn-top" onclick="openModal('infoModal')" style="cursor:pointer">ℹ️ AI Energy Intelligence — Ústecký kraj</div>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-title">📍 LOKACE</div>
+                <div id="sidebarLocation" style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:8px;">⬅️ Vyberte na mapě</div>
+                <div id="sidebarLocationDetail" style="font-size:0.75rem;color:var(--text-muted)"></div>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-title">📊 ŽIVÉ STATISTIKY</div>
+                <div class="info-text" style="margin-bottom: 8px;">
+                    Celkem analýz: <span id="totalAnalysesCount">0</span><br>
+                    Celkové úspory: <span id="totalSavingsAmount">0</span> Kč<br>
+                    Ušetřeno CO₂: <span id="totalCO2Amount">0</span> kg
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-title" id="calculator">💰 KALKULÁTOR</div>
+                <div class="prediction-input">
+                    <label>Rozpočet (Kč):</label>
+                    <input type="range" id="budgetSlider" min="500000" max="10000000" step="100000" value="3000000" oninput="updateBudgetDisplay(this.value)">
+                    <div style="display:flex;justify-content:space-between;font-size:10px"><span>0.5M</span><span>5M</span><span>10M</span></div>
+                    <div id="budgetValue" style="text-align:center;font-weight:bold;font-size:1.1rem">3 000 000 Kč</div>
+                </div>
+                <div class="budget-presets">
+                    <button class="preset-btn" onclick="setPresetBudget(500000)">🏠 500K</button>
+                    <button class="preset-btn" onclick="setPresetBudget(1500000)">🏡 1.5M</button>
+                    <button class="preset-btn" onclick="setPresetBudget(3000000)">👪 3M</button>
+                    <button class="preset-btn" onclick="setPresetBudget(5000000)">🏘️ 5M</button>
+                    <button class="preset-btn" onclick="setPresetBudget(10000000)">🏭 10M</button>
+                </div>
+                <div class="hydrogen-toggle">
+                    <div class="toggle-info">
+                        <span class="toggle-label">💧 Vodíkové úložiště</span>
+                        <span class="toggle-desc">Sezónní stabilita (+500k Kč)</span>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="hydrogenToggle" onchange="toggleHydrogen()">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-title">📈 VÝSLEDEK</div>
+                <div id="predictionResult">
+                    <div style="margin-bottom:8px">📊 <strong>Doporučení:</strong> <span id="recName">-</span></div>
+                    <div id="sidebarSummary" class="sidebar-summary">
+                        <div class="sidebar-summary-row"><span>⚡ FVE</span><span id="ssFve">-</span></div>
+                        <div class="sidebar-summary-row"><span>🔋 Baterie</span><span id="ssBaterie">-</span></div>
+                        <div class="sidebar-summary-row"><span>🏠 Soběstačnost</span><span id="ssSobestacnost">-</span></div>
+                        <div class="sidebar-summary-row"><span>💰 Úspora/rok</span><span id="ssUspora">-</span></div>
+                        <div class="sidebar-summary-row"><span>🌍 CO₂</span><span id="ssCO2">-</span></div>
+                        <div class="sidebar-summary-row"><span>⚠️ Riziko</span><span id="ssRiziko">-</span></div>
+                    </div>
+                </div>
+                <button id="calculateBtn" class="btn btn-primary" style="width:100%;margin-top:8px" onclick="updatePrediction()">⚡ Spustit výpočet</button>
+                <div style="display:flex;gap:6px;margin-top:6px">
+                    <button class="btn btn-outline btn-sm" style="flex:1" onclick="exportResultJSON()">📥 JSON</button>
+                    <button class="btn btn-outline btn-sm" style="flex:1" onclick="Utils.showNotification('PDF export spuštěn','info')">📄 PDF</button>
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-title">🏷️ TYPY STŘECH</div>
+                <div class="legend-item"><span class="legend-badge good"></span> <span id="legendSuitable">Vhodná střecha</span></div>
+                <div class="legend-item"><span class="legend-badge installed"></span> <span id="legendInstalled">FVE instalována</span></div>
+                <div class="legend-item"><span class="legend-badge bad"></span> <span id="legendUnsuitable">Nevhodná střecha</span></div>
+                <div class="legend-item"><span class="legend-badge industrial"></span> <span id="legendIndustrial">Průmyslová hala</span></div>
+            </div>
+
+            <div class="sidebar-section">
+                <button id="openChatBtn" class="btn btn-primary" style="width:100%">💬 Zeptejte se SolarAI</button>
+            </div>
+        </aside>
+    </div>
+
+    <!-- ===== MODALS ===== -->
+
+    <!-- 1. BUDGET CALCULATOR MODAL -->
+    <div id="budgetCalcModal" class="modal-overlay">
+        <div class="modal utility-modal">
+            <div class="modal-header">
+                <h3>📊 Budget Calculator</h3>
+                <button class="modal-close" onclick="closeModal('budgetCalcModal')">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Rozpočet (Kč):</label>
+                    <input type="number" id="budgetCalcInput" class="form-control" value="3000000" step="100000">
+                </div>
+                <div class="form-group">
+                    <label>Lokace:</label>
+                    <select id="budgetCalcLocation" class="form-control">
+                        <option value="Most">Most</option>
+                        <option value="Chomutov">Chomutov</option>
+                        <option value="Usti_nad_Labem">Ústí nad Labem</option>
+                        <option value="Teplice">Teplice</option>
+                        <option value="Litomerice">Litoměřice</option>
+                        <option value="Decin">Děčín</option>
+                    </select>
+                </div>
+                <button onclick="runBudgetCalculator()" class="btn btn-primary">Spočítat</button>
+                <div id="budgetCalcResult" class="result-area" style="margin-top: 16px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. AREA CALCULATOR MODAL -->
+    <div id="areaCalcModal" class="modal-overlay">
+        <div class="modal utility-modal">
+            <div class="modal-header">
+                <h3>📐 Kalkulačka plochy střechy</h3>
+                <button class="modal-close" onclick="closeModal('areaCalcModal')">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Délka střechy (m):</label>
+                    <input type="number" id="roofLength" class="form-control" value="10">
+                </div>
+                <div class="form-group">
+                    <label>Šířka střechy (m):</label>
+                    <input type="number" id="roofWidth" class="form-control" value="10">
+                </div>
+                <button onclick="calculateArea()" class="btn btn-primary">Spočítat plochu</button>
+                <div id="areaResult" class="result-area" style="margin-top: 16px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. BATTERY CALCULATOR MODAL -->
+    <div id="batteryCalcModal" class="modal-overlay">
+        <div class="modal utility-modal">
+            <div class="modal-header">
+                <h3>🔋 Kalkulačka baterie</h3>
+                <button class="modal-close" onclick="closeModal('batteryCalcModal')">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Výkon FVE (kWp):</label>
+                    <input type="number" id="batteryFveInput" class="form-control" value="50">
+                </div>
+                <div class="form-group">
+                    <label>Denní spotřeba (kWh):</label>
+                    <input type="number" id="batteryConsumptionInput" class="form-control" value="30">
+                </div>
+                <button onclick="runBatteryCalculator()" class="btn btn-primary">Spočítat baterii</button>
+                <div id="batteryCalcResult" class="result-area" style="margin-top: 16px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. ROI CALCULATOR MODAL -->
+    <div id="roiCalcModal" class="modal-overlay">
+        <div class="modal utility-modal">
+            <div class="modal-header">
+                <h3>💰 ROI kalkulačka</h3>
+                <button class="modal-close" onclick="closeModal('roiCalcModal')">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Investice (Kč):</label>
+                    <input type="number" id="investment" class="form-control" value="200000">
+                </div>
+                <div class="form-group">
+                    <label>Roční úspora (Kč):</label>
+                    <input type="number" id="annualSavings" class="form-control" value="25000">
+                </div>
+                <button onclick="calculateROI()" class="btn btn-primary">Spočítat návratnost</button>
+                <div id="roiResult" class="result-area" style="margin-top: 16px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 5. CO2 CALCULATOR MODAL -->
+    <div id="co2CalcModal" class="modal-overlay">
+        <div class="modal utility-modal">
+            <div class="modal-header">
+                <h3>🌍 CO₂ kalkulačka</h3>
+                <button class="modal-close" onclick="closeModal('co2CalcModal')">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Výkon FVE (kWp):</label>
+                    <input type="number" id="co2KwpInput" class="form-control" value="50">
+                </div>
+                <button onclick="runCO2Calculator()" class="btn btn-primary">Spočítat CO₂</button>
+                <div id="co2CalcResult" class="result-area" style="margin-top: 16px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 6. HOUSEHOLD CALCULATOR MODAL -->
+    <div id="householdCalcModal" class="modal-overlay">
+        <div class="modal utility-modal">
+            <div class="modal-header">
+                <h3>🏠 Kalkulačka domácnosti</h3>
+                <button class="modal-close" onclick="closeModal('householdCalcModal')">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Počet domácností:</label>
+                    <input type="number" id="hhCountInput" class="form-control" value="10">
+                </div>
+                <div class="form-group">
+                    <label>Výkon FVE (kWp):</label>
+                    <input type="number" id="hhKwpInput" class="form-control" value="50">
+                </div>
+                <button onclick="runHouseholdCalculator()" class="btn btn-primary">Spočítat</button>
+                <div id="householdCalcResult" class="result-area" style="margin-top: 16px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 7. ENERGY PRODUCTION CALCULATOR MODAL -->
+    <div id="energyCalcModal" class="modal-overlay">
+        <div class="modal utility-modal">
+            <div class="modal-header">
+                <h3>⚡ Výroba energie</h3>
+                <button class="modal-close" onclick="closeModal('energyCalcModal')">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Výkon FVE (kWp):</label>
+                    <input type="number" id="energyKwpInput" class="form-control" value="50">
+                </div>
+                <div class="form-group">
+                    <label>Lokace:</label>
+                    <select id="energyLocationInput" class="form-control">
+                        <option value="Most">Most</option>
+                        <option value="Chomutov">Chomutov</option>
+                        <option value="Usti_nad_Labem">Ústí nad Labem</option>
+                        <option value="Teplice">Teplice</option>
+                        <option value="Litomerice">Litoměřice</option>
+                        <option value="Decin">Děčín</option>
+                    </select>
+                </div>
+                <button onclick="runEnergyCalculator()" class="btn btn-primary">Spočítat výrobu</button>
+                <div id="energyCalcResult" class="result-area" style="margin-top: 16px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 8. SCENARIO COMPARATOR MODAL -->
+    <div id="scenarioCalcModal" class="modal-overlay">
+        <div class="modal" style="width: 680px; max-width: 95%;">
+            <div class="modal-header">
+                <h3>🔄 Porovnání scénářů</h3>
+                <button class="modal-close" onclick="closeModal('scenarioCalcModal')">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Lokace:</label>
+                    <select id="scenarioLocation" class="form-control" onchange="runScenarioComparator()">
+                        <option value="Most">Most</option>
+                        <option value="Chomutov">Chomutov</option>
+                        <option value="Usti_nad_Labem">Ústí nad Labem</option>
+                        <option value="Teplice">Teplice</option>
+                        <option value="Litomerice">Litoměřice</option>
+                        <option value="Decin">Děčín</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Rozpočet (Kč):</label>
+                    <input type="number" id="scenarioBudget" class="form-control" value="3000000">
+                </div>
+                <button onclick="runScenarioComparator()" class="btn btn-primary">Porovnat scénáře</button>
+                <div id="scenarioCalcResult" class="result-area" style="margin-top: 16px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 9. HISTORICAL TRENDS MODAL -->
+    <div id="trendCalcModal" class="modal-overlay">
+        <div class="modal" style="width: 600px; max-width: 95%;">
+            <div class="modal-header">
+                <h3>📈 Historické trendy 2015-2025</h3>
+                <button class="modal-close" onclick="closeModal('trendCalcModal')">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Lokace:</label>
+                    <select id="trendLocation" class="form-control" onchange="runTrendAnalyzer()">
+                        <option value="Most">Most</option>
+                        <option value="Chomutov">Chomutov</option>
+                        <option value="Usti_nad_Labem">Ústí nad Labem</option>
+                        <option value="Teplice">Teplice</option>
+                        <option value="Litomerice">Litoměřice</option>
+                        <option value="Decin">Děčín</option>
+                    </select>
+                </div>
+                <button onclick="runTrendAnalyzer()" class="btn btn-primary">Zobrazit trendy</button>
+                <div id="trendCalcResult" class="result-area" style="margin-top: 16px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 10. MEASURE IMPACT SIMULATOR MODAL -->
+    <div id="measureCalcModal" class="modal-overlay">
+        <div class="modal" style="width: 600px; max-width: 95%;">
+            <div class="modal-header">
+                <h3>🛠️ Simulátor opatření</h3>
+                <button class="modal-close" onclick="closeModal('measureCalcModal')">✕</button>
+            </div>
+            <div class="modal-body">
+                <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:12px;">Vyberte opatření pro simulaci dopadu na energetický systém:</p>
+                <div id="measureCheckboxes" class="measure-list"></div>
+                <button onclick="runMeasureSimulator()" class="btn btn-primary" style="margin-top: 12px;">Simulovat dopad</button>
+                <div id="measureCalcResult" class="result-area" style="margin-top: 16px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- INFO MODAL -->
+    <div id="infoModal" class="modal-overlay">
+        <div class="modal info-modal">
+            <div class="modal-header">
+                <h3>ℹ️ O projektu SolarAI</h3>
+                <button class="modal-close" onclick="closeModal('infoModal')">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="info-section">
+                    <h4>📋 O projektu</h4>
+                    <p>AI Solar Roof Analyzer je platforma pro plánování fotovoltaických elektráren a bateriových úložišť v Ústeckém kraji. Vytvořeno pro ECUK (Energetické centrum Ústeckého kraje) v rámci AI Olympiády 2026.</p>
+                </div>
+
+                <div class="info-section">
+                    <h4>🔧 Jak to funguje</h4>
+                    <ol style="font-size:0.85rem; color:var(--text-secondary); line-height:1.8; padding-left:20px;">
+                        <li><strong>Nahrajte snímek</strong> - satelitní nebo letecký snímek střechy</li>
+                        <li><strong>AI analýza</strong> - neuronová síť klasifikuje typ střechy (4 třídy)</li>
+                        <li><strong>Výpočet</strong> - na základě rozpočtu a lokace spočítáme optimální FVE</li>
+                    </ol>
+                </div>
+
+                <div class="info-section">
+                    <h4>📖 Slovník pojmů</h4>
+                    <div class="glossary-term">
+                        <span class="term">kWp</span>
+                        <span class="def">Kilowatt-peak - špičkový výkon solárního panelu za standardních podmínek</span>
+                    </div>
+                    <div class="glossary-term">
+                        <span class="term">kWh</span>
+                        <span class="def">Kilowatthodina - množství vyrobené/spotřebované energie</span>
+                    </div>
+                    <div class="glossary-term">
+                        <span class="term">ROI</span>
+                        <span class="def">Return on Investment - návratnost investice v letech</span>
+                    </div>
+                    <div class="glossary-term">
+                        <span class="term">FVE</span>
+                        <span class="def">Fotovoltaická elektrárna - systém solárních panelů</span>
+                    </div>
+                    <div class="glossary-term">
+                        <span class="term">BESS</span>
+                        <span class="def">Battery Energy Storage System - bateriové úložiště energie</span>
+                    </div>
+                    <div class="glossary-term">
+                        <span class="term">Soběstačnost</span>
+                        <span class="def">Procento pokrytí vlastní spotřeby z vlastní výroby</span>
+                    </div>
+                </div>
+
+                <div class="info-section">
+                    <h4>📊 Zdroje dat</h4>
+                    <ul>
+                        <li>Historická data obcí Ústeckého kraje 2015-2025 (4 obce, 10 let)</li>
+                        <li>Katalog opatření - 15 opatření (výroba, úložiště, úspory)</li>
+                        <li>Scénáře projekce 2026-2035 (7 scénářů S00-S06)</li>
+                        <li>SimpleML model - predikce soběstačnosti a rizika</li>
+                    </ul>
+                </div>
+
+                <div class="info-section">
+                    <h4>📧 Kontakt</h4>
+                    <p>ECUK - Energetické centrum Ústeckého kraje<br>
+                    Email: info@ecuk.cz<br>
+                    AI Olympiáda 2026 - Tým SolarAI</p>
+                </div>
+
+                <div class="info-section">
+                    <h4>🤖 AI Model</h4>
+                    <ul>
+                        <li>Architektura: CNN klasifikátor (MobileNetV2 báze)</li>
+                        <li>Vstup: 64×64 px satelitní snímky</li>
+                        <li>4 třídy: vhodná střecha, FVE instalována, nevhodná, průmyslová hala</li>
+                        <li>Přesnost: ~89% na validační sadě</li>
+                        <li>Confidence interval: 70-95% v závislosti na datech</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Explanation Modal -->
+    <div id="explanationModal" class="modal-overlay">
+        <div class="modal" style="width:500px;max-width:95%;max-height:80vh;overflow-y:auto;">
+            <div class="modal-header">
+                <h3>❓ Proč tento výsledek?</h3>
+                <button class="modal-close" onclick="closeExplanation()">✕</button>
+            </div>
+            <div class="modal-body" id="explanationContent">
+                <p>Načítám...</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="chatModal" class="modal-overlay">
+        <div class="modal">
+            <div class="chat-header">
+                <span>🤖 SolarAI Asistent</span>
+                <button class="modal-close" onclick="closeChat()">✕</button>
+            </div>
+            <div class="chat-messages" id="chatMessages">
+                <div class="chat-message bot">👋 Ahoj! Zeptejte se na cokoli o solárních střechách, úsporách nebo dotacích.</div>
+            </div>
+            <div class="chat-input-area">
+                <input type="text" id="chatInput" placeholder="Napište otázku..." class="chat-input">
+                <button onclick="sendChat()" class="btn btn-primary">Odeslat</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="teamBar" class="team-bar">
+        <div class="team-bar-inner">
+            <div class="team-info">🌞 AI Solar Roof Analyzer Tým | Vyvinuto pro ECUK | AI Olympiáda 2026 | Ústecký kraj</div>
+            <div class="team-members">👨‍💻 Tým: AI Olympiáda 2026 | Partner: ECUK | 📧 info@ecuk.cz</div>
+        </div>
+    </div>
+
+    <!-- JavaScript Files -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+    <script src="js/config.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/translation.js"></script>
+    <script src="js/dataService.js"></script>
+    <script src="js/loadAdminContent.js"></script>
+    <script src="js/ai-model.js"></script>
+    <script src="js/prediction.js"></script>
+    <script src="js/calculators.js"></script>
+    <script src="js/chat.js"></script>
+    <script src="js/explanation.js"></script>
+    <script src="js/map.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/main.js"></script>
+    <script src="js/smart-calculator.js"></script>
+    <script src="js/chart-setup.js"></script>
+    <script src="js/state-manager.js"></script>
+    <script src="js/city-analysis.js"></script>
+    <script src="js/calculator-results.js"></script>
+
+</body>
+</html>

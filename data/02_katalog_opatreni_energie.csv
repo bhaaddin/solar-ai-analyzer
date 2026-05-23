@@ -1,0 +1,16 @@
+id,kategorie,nazev_opatreni,popis_kratky,cena_mil_kc,doba_implementace_let,delta_vykon_kWp,delta_baterie_kWh,vodik_ano_ne,dopad_sobestacnost_pp_rocne,dopad_riziko_pp_rocne
+E1,vyroba,FVE na střeše školy/úřadu,"Malá komunitní FVE na střeše veřejné budovy, sdílení s obcí",2.5,1,50,0,0,2.5,-1.2
+E2,vyroba,FVE na průmyslové hale,"Velká střešní FVE na průmyslové hale, přebytek do komunitní sítě",6 mil. Kč,2,200,0,0,5.8,-2.1
+E3,vyroba,Komunitní FVE – ground mounted,"FVE na volné ploše (rekultivace/post-důlní), energetické společenství",14.0,3,500,0,0,velký přínos,-3.5
+E4,vyroba,FVE velká – průmyslová zóna Triangle,"Velká FVE v průmyslové zóně, napájení komunity i průmyslu",28 (odhad),4,1200,0,0,14.0,-4.8
+E5,vyroba,Větrná elektrárna malá,"Malá větrná turbína pro obec, vhodná pro Krušnohoří",3.8,2,"+80,0",0,0,3.2,-1.8
+B1,uloziste,Bateriové úložiště malé (BESS),"Baterie pro bytový dům nebo skupinu domácností, denní cyklus",1.2,1,0,100,0,1.8,-4.5
+B2,uloziste,Komunitní baterie střední,"Sdílené bateriové úložiště pro celou obec, vyrovnání špiček",4.5,2,0,500,0,"+4,2",-9.8
+B3,uloziste,Smart metering + EMS,Chytré měření a řízení spotřeby – optimalizace bez hardware,0.8,1,0,50,0,1.2,-5.2
+B4,uloziste,Komunitní baterie velká + smart grid,Velké úložiště s chytrým řízením distribuce v obci,12.0,3,0,2000,0,7.5,N/A
+B5,uloziste,Sezónní vodíkové úložiště + FVE,FVE velká + elektrolýza PEM + skladování H2 + palivový článek – sezónní akumulace,45.0,osm,1000,200,1,18.0,-25.0
+U1,uspory,Zateplení obecních budov,"Komplexní zateplení školy, úřadu a kulturního domu",3.2,2,0,0,0,3.8,-2.1
+U2,uspory,Výměna veřejného osvětlení za LED,"LED osvětlení s chytrým řízením, úspora 60–70 % spotřeby osvětlení",1400000 Kč,1,0,0,0,1.5,-0.8
+U3,uspory,Tepelné čerpadlo – obecní budovy,Náhrada plynového vytápění tepelným čerpadlem v obecních budovách,2.1,1,+0 pp,0,0,2.2,-3.5
+U4,uspory,Energetický management + digitalizace,EMS systém pro monitoring a optimalizaci spotřeby všech obecních budov,0.6,1,0,0,0,1.8,-1.2
+U5,uspory,Komunitní sdílení – registrace ES + smart metr,Právní a technická příprava energetického společenství bez nové výroby,0.4,1,0,0,0,0.8,-0.5

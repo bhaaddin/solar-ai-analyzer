@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - AI Solar Roof Analyzer</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .dashboard-container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+        .welcome-card { background: linear-gradient(135deg, #2c5282 0%, #1a3a5c 100%); color: white; padding: 40px; border-radius: 16px; margin-bottom: 24px; }
+        .profile-card { background: white; border-radius: 12px; border: 1px solid #e9ecef; padding: 24px; margin-bottom: 24px; }
+        .info-card { background: white; border-radius: 12px; border: 1px solid #e9ecef; padding: 24px; }
+        .btn { padding: 10px 24px; border: none; border-radius: 8px; cursor: pointer; font-size: 0.9rem; }
+        .btn-primary { background: #2c5282; color: white; text-decoration: none; display: inline-block; }
+        .btn-outline { background: transparent; border: 1px solid #2c5282; color: #2c5282; }
+    </style>
+</head>
+<body>
+    <nav style="background: white; border-bottom: 1px solid #e9ecef; padding: 0 24px; height: 60px; display: flex; align-items: center;">
+        <div style="max-width: 1200px; margin: 0 auto; width: 100%; display: flex; justify-content: space-between;">
+            <a href="index.html" style="font-size: 1.2rem; font-weight: 600; color: #1a1a2e;">🌞 AI Solar Roof Analyzer</a>
+            <div>
+                <span id="userDisplay" style="margin-right: 16px; color: #6c757d;"></span>
+                <a href="#" id="logoutBtn" style="padding: 6px 16px; background: #e9ecef; border-radius: 8px; text-decoration: none; color: #495057;">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="dashboard-container">
+        <div class="welcome-card">
+            <h1>Welcome, <span id="userName"></span>! 👋</h1>
+            <p>You are logged in as a registered user of the AI Solar Roof Analyzer platform.</p>
+            <a href="index.html" class="btn btn-primary" style="margin-top: 16px; display: inline-block;">🔍 Analyze a Roof</a>
+        </div>
+
+        <div class="profile-card">
+            <h2>👤 Your Profile</h2>
+            <div id="profileInfo"></div>
+        </div>
+
+        <div class="info-card">
+            <h2>ℹ️ Platform Information</h2>
+            <div id="platformInfo"></div>
+        </div>
+    </div>
+
+    <script src="js/config.js"></script>
+    <script>
+        const API_URL = CONFIG.API_URL;
+        let token = localStorage.getItem('token');
+        let currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+
+        if (!token) {
+            window.location.href = 'login.html';
+        }
+
+        document.getElementById('userDisplay').innerHTML = `👤 ${currentUser.username}`;
+        document.getElementById('userName').innerHTML = currentUser.profile?.fullName || currentUser.username;
+
+        async function loadProfile() {
+            const res = await fetch(`${API_URL}/me`, { headers: { 'Authorization': `Bearer ${token}` } });
+            const user = await res.json();
+            
+            document.getElementById('profileInfo').innerHTML = `
+                <p><strong>Full Name:</strong> ${user.profile?.fullName || '-'}</p>
+                <p><strong>Email:</strong> ${user.email}</p>
+                <p><strong>Department:</strong> ${user.profile?.department || '-'}</p>
+                <p><strong>Phone:</strong> ${user.profile?.phone || '-'}</p>
+                <p><strong>Member since:</strong> ${new Date(user.profile?.createdAt).toLocaleDateString() || '-'}</p>
+                <p><strong>Role:</strong> <span style="background: #e9ecef; padding: 2px 8px; border-radius: 12px;">${user.role}</span></p>
+            `;
+        }
+
+        async function loadPlatformInfo() {
+            const res = await fetch(`${API_URL}/content`);
+            const content = await res.json();
+            
+            document.getElementById('platformInfo').innerHTML = `
+                <p><strong>Site:</strong> ${content.siteTitle}</p>
+                <p><strong>Description:</strong> ${content.description}</p>
+                <p><strong>Contact:</strong> ${content.contactEmail}</p>
+                <p><strong>Funding Info:</strong> ${content.fundingInfo}</p>
+                <hr>
+                <small>Last updated: ${new Date(content.lastUpdated).toLocaleString()} by ${content.updatedBy}</small>
+            `;
+        }
+
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            localStorage.clear();
+            window.location.href = 'index.html';
+        });
+
+        loadProfile();
+        loadPlatformInfo();
+    </script>
+
+</body>
+</html>
