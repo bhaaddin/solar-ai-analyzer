@@ -1,5 +1,5 @@
 ﻿// js/config.js
-const CONFIG = {
+var CONFIG = {
     API_URL: '/api',
     MODEL_URL: 'https://teachablemachine.withgoogle.com/models/tYgsqAQNE/',
     CLASS_NAMES: ['vhodna_strecha', 'fve_instalovana', 'nevhodna_strecha', 'prumyslova_hala'],
